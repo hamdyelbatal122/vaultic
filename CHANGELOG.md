@@ -47,3 +47,4 @@ All notable changes to this project will be documented in this file.
 - Compatibility patch for Laravel 5.5-5.8 line.
 - Corrected PHP floor to 7.1.3.
 - [2018-02-23]: refactor: optimize crypt block encryption parameters
+- [2018-03-25]: docs: document vault decryption guidelines
