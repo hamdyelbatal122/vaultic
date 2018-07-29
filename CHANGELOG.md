@@ -51,3 +51,4 @@ All notable changes to this project will be documented in this file.
 - [2018-04-26]: chore: update crypto dependencies versions
 - [2018-05-29]: style: tidy up security headers formatting
 - [2018-07-02]: docs: document master password recovery limits
+- [2018-07-29]: refactor: simplify secret keys derivation logic
