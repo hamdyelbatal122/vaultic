@@ -53,3 +53,4 @@ All notable changes to this project will be documented in this file.
 - [2018-07-02]: docs: document master password recovery limits
 - [2018-07-29]: refactor: simplify secret keys derivation logic
 - [2018-08-24]: fix: correct file decryption stream handlers
+- [2018-09-23]: docs: document local vault backup routines
