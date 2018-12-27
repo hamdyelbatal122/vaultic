@@ -56,3 +56,4 @@ All notable changes to this project will be documented in this file.
 - [2018-09-23]: docs: document local vault backup routines
 - [2018-10-27]: chore: configure default key wrapping options
 - [2018-12-01]: refactor: clean up key management cache entries
+- [2018-12-27]: style: improve secure terminal inputs layout
