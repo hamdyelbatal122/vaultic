@@ -63,3 +63,4 @@ All notable changes to this project will be documented in this file.
 - [2019-05-15]: docs: update troubleshooting guide for pin codes
 - [2019-06-13]: fix: resolve cipher modes configuration flags
 - [2019-07-13]: refactor: streamline database secrets backend
+- [2019-08-08]: docs: update environment settings for vault service
