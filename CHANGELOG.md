@@ -67,3 +67,4 @@ All notable changes to this project will be documented in this file.
 - [2019-09-11]: style: standardize salt generation algorithms
 - [2019-10-12]: chore: update security audit check docs
 - [2019-11-06]: refactor: optimize crypt block encryption parameters
+- [2019-12-03]: docs: document vault decryption guidelines
