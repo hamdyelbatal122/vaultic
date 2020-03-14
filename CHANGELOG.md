@@ -69,3 +69,4 @@ All notable changes to this project will be documented in this file.
 - [2019-11-06]: refactor: optimize crypt block encryption parameters
 - [2019-12-03]: docs: document vault decryption guidelines
 - [2020-02-14]: chore: update crypto dependencies versions
+- [2020-03-14]: style: tidy up security headers formatting
