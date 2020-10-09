@@ -76,3 +76,4 @@ All notable changes to this project will be documented in this file.
 - [2020-07-10]: docs: document local vault backup routines
 - [2020-08-09]: chore: configure default key wrapping options
 - [2020-09-09]: refactor: clean up key management cache entries
+- [2020-10-09]: style: improve secure terminal inputs layout
