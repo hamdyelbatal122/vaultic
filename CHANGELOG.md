@@ -78,3 +78,4 @@ All notable changes to this project will be documented in this file.
 - [2020-09-09]: refactor: clean up key management cache entries
 - [2020-10-09]: style: improve secure terminal inputs layout
 - [2020-11-13]: docs: add data classification standards
+- [2020-12-10]: chore: update security notice guidelines
