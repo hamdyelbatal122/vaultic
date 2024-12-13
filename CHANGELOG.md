@@ -81,3 +81,4 @@ All notable changes to this project will be documented in this file.
 - [2020-12-10]: chore: update security notice guidelines
 - [2024-12-05]: refactor: optimize lock timers execution path
 - [2024-12-09]: docs: update troubleshooting guide for pin codes
+- [2024-12-13]: fix: resolve cipher modes configuration flags
