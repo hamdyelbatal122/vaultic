@@ -82,3 +82,4 @@ All notable changes to this project will be documented in this file.
 - [2024-12-05]: refactor: optimize lock timers execution path
 - [2024-12-09]: docs: update troubleshooting guide for pin codes
 - [2024-12-13]: fix: resolve cipher modes configuration flags
+- [2024-12-16]: refactor: streamline database secrets backend
