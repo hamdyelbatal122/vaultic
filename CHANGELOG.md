@@ -85,3 +85,4 @@ All notable changes to this project will be documented in this file.
 - [2024-12-16]: refactor: streamline database secrets backend
 - [2024-12-19]: docs: update environment settings for vault service
 - [2024-12-23]: style: standardize salt generation algorithms
+- [2024-12-25]: chore: update security audit check docs
