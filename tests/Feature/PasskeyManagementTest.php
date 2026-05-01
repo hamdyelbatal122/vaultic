@@ -33,6 +33,7 @@ class PasskeyManagementTest extends TestCase
             $table->string('transports')->nullable();
             $table->string('aaguid', 36)->nullable();
             $table->timestamp('last_used_at')->nullable();
+            $table->string('last_used_ip', 45)->nullable();
             $table->timestamps();
         });
     }
@@ -42,7 +43,7 @@ class PasskeyManagementTest extends TestCase
         $html = Blade::render('{{ vaultic_passkey_button(["identifierSelector" => "#email"]) }}');
 
         $this->assertStringContainsString('data-vaultic-passkey', $html);
-        $this->assertStringContainsString('FIDO2/WebAuthn Login', $html);
+        $this->assertStringContainsString('Continue with passkey', $html);
         $this->assertStringContainsString('#email', $html);
     }
 
@@ -67,5 +68,32 @@ class PasskeyManagementTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseMissing('passkeys', ['credential_id' => 'cred-delete']);
+    }
+
+    public function test_it_renders_last_used_ip_in_the_management_panel()
+    {
+        $user = TestUser::query()->create([
+            'email' => 'user@example.com',
+            'name' => 'Test User',
+        ]);
+
+        $passkey = Passkey::query()->create([
+            'authenticatable_type' => TestUser::class,
+            'authenticatable_id' => (string) $user->getAuthIdentifier(),
+            'name' => 'iPhone',
+            'credential_id' => 'cred-ip-visible',
+            'public_key' => 'public-key',
+            'sign_count' => 2,
+            'last_used_at' => now(),
+            'last_used_ip' => '203.0.113.20',
+        ]);
+
+        $html = Blade::render('<x-vaultic::passkey-panel :user="$user" :passkeys="$passkeys" />', [
+            'user' => $user,
+            'passkeys' => collect([$passkey]),
+        ]);
+
+        $this->assertStringContainsString('Last IP', $html);
+        $this->assertStringContainsString('203.0.113.20', $html);
     }
 }

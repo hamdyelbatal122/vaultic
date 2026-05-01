@@ -188,9 +188,10 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * @param string|null $identifier
      * @param array<string, mixed> $payload
+      * @param string|null $clientIp
      * @return array<string, mixed>
      */
-    public function authenticate($identifier, array $payload, $guardName = null, $stateful = null)
+     public function authenticate($identifier, array $payload, $guardName = null, $stateful = null, $clientIp = null)
     {
         $guardConfig = $this->getGuardConfig($guardName);
         $isStateful = $stateful === null ? (bool) $guardConfig['stateful'] : (bool) $stateful;
@@ -204,6 +205,24 @@ class WebAuthnService implements WebAuthnServiceContract
             Event::dispatch(new AuthenticationFailed('Expired authentication challenge.', null, $normalizedIdentifier));
 
             return $this->fallbackResponse($normalizedIdentifier, $guardConfig, $isStateful);
+        }
+
+        $credentialId = null;
+        $passkey = null;
+
+        if (isset($payload['rawId']) && is_string($payload['rawId'])) {
+            $credentialId = trim($payload['rawId']);
+        } elseif (isset($payload['id']) && is_string($payload['id'])) {
+            $credentialId = trim($payload['id']);
+        }
+
+        if ($credentialId !== null && $credentialId !== '') {
+            $passkey = $this->passkeyRepository->findByCredentialId($credentialId);
+
+            if ($passkey !== null) {
+                $payload['credentialPublicKey'] = (string) $passkey->public_key;
+                $payload['signCount'] = (int) $passkey->sign_count;
+            }
         }
 
         try {
@@ -223,7 +242,7 @@ class WebAuthnService implements WebAuthnServiceContract
         }
 
         $user = $normalizedIdentifier !== '' ? $this->resolveUserByIdentifier($normalizedIdentifier, $guardConfig) : null;
-        $passkey = $this->passkeyRepository->findByCredentialId($result->getCredentialId());
+        $passkey = $passkey ?: $this->passkeyRepository->findByCredentialId($result->getCredentialId());
         $authenticatable = $passkey ? $passkey->authenticatable : null;
 
         $matchesRequestedUser = $user !== null
@@ -262,7 +281,12 @@ class WebAuthnService implements WebAuthnServiceContract
             ];
         }
 
-        $this->passkeyRepository->markAsUsed($passkey, $result->getSignCount());
+        $storeLastUsedIp = (bool) config('vaultic.security.store_last_used_ip', true);
+        $this->passkeyRepository->markAsUsed(
+            $passkey,
+            $result->getSignCount(),
+            $storeLastUsedIp ? $clientIp : null
+        );
 
         $sessionPayload = [];
         $tokenPayload = [];

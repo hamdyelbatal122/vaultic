@@ -81,6 +81,12 @@
             const publicKeyToCreationOptions = (options) => ({
                 ...options,
                 challenge: decodeCredentialValue(options.challenge),
+                pubKeyCredParams: Array.isArray(options.pubKeyCredParams) && options.pubKeyCredParams.length > 0
+                    ? options.pubKeyCredParams
+                    : [
+                        { type: 'public-key', alg: -7 },
+                        { type: 'public-key', alg: -257 },
+                    ],
                 user: {
                     ...options.user,
                     id: textEncoder.encode(String(options.user.id)),

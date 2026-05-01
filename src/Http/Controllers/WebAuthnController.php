@@ -98,7 +98,8 @@ class WebAuthnController extends Controller
             isset($validated['identifier']) ? (string) $validated['identifier'] : null,
             $request->all(),
             $resolvedGuard,
-            $stateful
+            $stateful,
+            (string) $request->ip()
         );
 
         if (isset($result['session']) && is_array($result['session'])) {

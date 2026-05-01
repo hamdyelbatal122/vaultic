@@ -24,6 +24,7 @@ class CreatePasskeysTable extends Migration
             $table->string('transports')->nullable();
             $table->string('aaguid', 36)->nullable();
             $table->timestamp('last_used_at')->nullable();
+            $table->string('last_used_ip', 45)->nullable();
             $table->timestamps();
 
             $table->index(['authenticatable_type', 'authenticatable_id', 'last_used_at'], 'passkeys_auth_lookup');

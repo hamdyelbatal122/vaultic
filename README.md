@@ -1,8 +1,8 @@
-# Vaultic 
+# Vaultic
 
 Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with challenge storage, fallback authentication flows, multi-guard support, and web/API-ready response handling.
 
-This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runtimes.
+This v4.X release is optimized for Laravel 13 projects and modern PHP 8.3+ runtimes.
 
 ## Compatibility
 
@@ -11,16 +11,16 @@ This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 
 ## Version Matrix
 
-| Vaultic Tag | PHP | Laravel |
-| --- | --- | --- |
-| v1.0.2 | 7.1.3+ | 5.5-5.8 |
-| v1.2.1 | 7.2.5+ | 6.x |
-| v1.3.0 | 7.2.5+ | 7.x |
-| v3.0.1 | 8.0.2+ | 9.x |
-| v3.1.0 | 8.1+ | 10.x |
-| v3.2.1 | 8.2+ | 11.x |
-| v3.3.1 | 8.2+ | 12.x |
-| v4.0.0 | 8.3+ | 13.x |
+| Vaultic Tag | PHP    | Laravel |
+|-------------|--------|---------|
+| v1.0.2      | 7.1.3+ | 5.5-5.8 |
+| v1.2.1      | 7.2.5+ | 6.x     |
+| v1.3.0      | 7.2.5+ | 7.x     |
+| v3.0.1      | 8.0.2+ | 9.x     |
+| v3.1.0      | 8.1+   | 10.x    |
+| v3.2.1      | 8.2+   | 11.x    |
+| v3.3.1      | 8.2+   | 12.x    |
+| v4.0.0      | 8.3+   | 13.x    |
 
 ## Architecture
 
@@ -42,6 +42,7 @@ Flow:
 - UI-agnostic JSON endpoints that work with Blade, Livewire, Inertia, Vue, React, or native mobile clients
 - Polymorphic passkey ownership, so passkeys can belong to different authenticatable models
 - Optional token issuing abstraction for API guards, including a built-in Sanctum-friendly issuer
+- Activity visibility in the management view, including last usage time and last IP used for a passkey
 
 ## Installation
 
@@ -101,10 +102,16 @@ By default, Vaultic derives the relying party from your main Laravel application
 'resident_key' => 'required',
 'authenticator_hints' => ['client-device', 'hybrid'],
 
+'security' => [
+    'store_last_used_ip' => true,
+],
+
 'fallback' => [
     'driver' => 'password',
 ],
 ```
+
+If your app runs behind Cloudflare, Nginx, or a load balancer, configure Laravel trusted proxies correctly so passkey activity IP addresses are recorded accurately.
 
 Guard configuration lives under `auth.guards` in [config/vaultic.php](config/vaultic.php). Each guard can define:
 
@@ -118,6 +125,12 @@ For modern passkey UX, Vaultic enables discoverable credentials by default and c
 
 - `client-device`: Face ID, Touch ID, Windows Hello, built-in biometrics
 - `hybrid`: phone-assisted sign-in flows that typically rely on proximity transports such as Bluetooth
+
+## Browser and Device Coverage
+
+Vaultic follows the WebAuthn/FIDO2 standard and supports platform passkeys (Face ID, Touch ID, Windows Hello), hybrid phone flows, and roaming authenticators (USB/NFC/BLE security keys) when the client browser/device supports them.
+
+In production, always test your own target matrix (OS + browser + authenticator type), because browser vendors may differ in UX details, transport handling, and conditional behavior.
 
 ## Routes
 
@@ -254,6 +267,7 @@ The management panel stays fully Tailwind-based and includes:
 - compact registration CTA
 - discoverable passkey copy
 - linked authenticators table
+- last used timestamp and last used IP activity visibility
 - device deletion actions
 
 Or through the directive/helper APIs:

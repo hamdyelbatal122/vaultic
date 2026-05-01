@@ -50,7 +50,8 @@ interface PasskeyRepository
     /**
      * @param Passkey $passkey
      * @param int $signCount
+     * @param string|null $ipAddress
      * @return void
      */
-    public function markAsUsed(Passkey $passkey, $signCount);
+    public function markAsUsed(Passkey $passkey, $signCount, $ipAddress = null);
 }

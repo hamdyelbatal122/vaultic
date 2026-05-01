@@ -74,6 +74,10 @@ return [
     'authenticator_attachment' => null,
     'authenticator_hints' => ['client-device', 'hybrid'],
 
+    'security' => [
+        'store_last_used_ip' => true,
+    ],
+
     'fallback' => [
         'driver' => 'password', // password|magic_link
         'password_login_route' => 'login',
