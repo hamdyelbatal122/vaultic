@@ -29,9 +29,10 @@ interface WebAuthnService
     /**
      * @param string|null $identifier
      * @param array<string, mixed> $payload
+      * @param string|null $clientIp
      * @return array<string, mixed>
      */
-    public function authenticate($identifier, array $payload, $guardName = null, $stateful = null);
+     public function authenticate($identifier, array $payload, $guardName = null, $stateful = null, $clientIp = null);
 
     /**
      * @param Authenticatable $user

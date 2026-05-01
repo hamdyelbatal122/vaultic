@@ -23,6 +23,7 @@ class Passkey extends Model
         'transports',
         'aaguid',
         'last_used_at',
+        'last_used_ip',
     ];
 
     protected $casts = [

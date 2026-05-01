@@ -48,6 +48,7 @@ class WebAuthnServiceTest extends TestCase
             $table->string('transports')->nullable();
             $table->string('aaguid', 36)->nullable();
             $table->timestamp('last_used_at')->nullable();
+            $table->string('last_used_ip', 45)->nullable();
             $table->timestamps();
         });
 
@@ -107,13 +108,17 @@ class WebAuthnServiceTest extends TestCase
         });
 
         $service->buildAuthenticationOptions('user@example.com', 'web');
-        $result = $service->authenticate('user@example.com', ['id' => 'cred-web'], 'web', true);
+        $result = $service->authenticate('user@example.com', ['id' => 'cred-web'], 'web', true, '203.0.113.10');
 
         $this->assertSame(200, $result['status']);
         $this->assertSame('web', $result['body']['guard']);
         $this->assertTrue($result['body']['stateful']);
         $this->assertArrayHasKey('vaultic.passkeys.authenticated', $result['session']);
         $this->assertSame([], $result['body']['tokens']);
+        $this->assertDatabaseHas('passkeys', [
+            'credential_id' => 'cred-web',
+            'last_used_ip' => '203.0.113.10',
+        ]);
     }
 
     public function test_it_returns_token_payload_for_stateless_api_guard()
@@ -246,6 +251,47 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame(200, $result['status']);
         $this->assertSame('web', $result['body']['guard']);
         $this->assertTrue($result['body']['stateful']);
+    }
+
+    public function test_it_can_skip_storing_last_used_ip_for_privacy_sensitive_setups()
+    {
+        config()->set('vaultic.security.store_last_used_ip', false);
+
+        $user = TestUser::query()->create([
+            'email' => 'privacy@example.com',
+            'name' => 'Privacy User',
+        ]);
+
+        Passkey::query()->create([
+            'authenticatable_type' => TestUser::class,
+            'authenticatable_id' => (string) $user->getAuthIdentifier(),
+            'name' => 'Phone',
+            'credential_id' => 'cred-privacy',
+            'public_key' => 'public-key',
+            'sign_count' => 1,
+        ]);
+
+        $service = $this->makeService(new class implements ApiTokenIssuer {
+            public function issueToken($authenticatable, $guardName, array $payload = [])
+            {
+                return [];
+            }
+        });
+
+        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
+            public function login($user, $remember = false)
+            {
+            }
+        });
+
+        $service->buildAuthenticationOptions('privacy@example.com', 'web');
+        $result = $service->authenticate('privacy@example.com', ['id' => 'cred-privacy'], 'web', true, '198.51.100.15');
+
+        $this->assertSame(200, $result['status']);
+        $this->assertDatabaseHas('passkeys', [
+            'credential_id' => 'cred-privacy',
+            'last_used_ip' => null,
+        ]);
     }
 
     /**

@@ -97,12 +97,16 @@ class EloquentPasskeyRepository implements PasskeyRepository
     /**
      * @param Passkey $passkey
      * @param int $signCount
+     * @param string|null $ipAddress
      * @return void
      */
-    public function markAsUsed(Passkey $passkey, $signCount)
+    public function markAsUsed(Passkey $passkey, $signCount, $ipAddress = null)
     {
         $passkey->sign_count = max((int) $passkey->sign_count, (int) $signCount);
         $passkey->last_used_at = now();
+        $passkey->last_used_ip = is_string($ipAddress) && filter_var(trim($ipAddress), FILTER_VALIDATE_IP)
+            ? trim($ipAddress)
+            : null;
         $passkey->save();
     }
 }

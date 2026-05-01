@@ -16,6 +16,9 @@
     $resolvedGuard = $guard ?: (string) config('vaultic.auth.default_guard', 'web');
     $resolvedUser = $user ?: auth()->guard($resolvedGuard)->user();
     $resolvedPasskeys = $passkeys;
+    $deleteRouteName = rtrim((string) config('vaultic.routes.web.name_prefix', 'vaultic.'), '.').'.passkeys.destroy';
+    $canDeletePasskey = \Illuminate\Support\Facades\Route::has($deleteRouteName);
+    $nameFieldId = 'vaultic-passkey-name-'.substr(md5((string) $resolvedGuard), 0, 8);
 
     if ($resolvedPasskeys === null) {
         $resolvedPasskeys = $resolvedUser
@@ -23,19 +26,24 @@
             : collect();
     }
 
-    $deleteRouteName = rtrim((string) config('vaultic.routes.web.name_prefix', 'vaultic.'), '.').'.passkeys.destroy';
-    $nameFieldId = 'vaultic-passkey-name-'.substr(md5((string) $resolvedGuard), 0, 8);
+    $formatAaguid = static function (string $value): string {
+        if (preg_match('/^[a-f0-9]{32}$/i', $value) !== 1) {
+            return $value;
+        }
+
+        return implode('-', [substr($value, 0, 8), substr($value, 8, 4), substr($value, 12, 4), substr($value, 16, 4), substr($value, 20, 12)]);
+    };
 @endphp
 
-<section class="mx-auto w-full max-w-5xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_100px_-40px_rgba(15,23,42,0.45)]">
-    <div class="grid gap-0 lg:grid-cols-[1.1fr,0.9fr]">
-        <div class="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(148,163,184,0.02))] p-6 sm:p-8 lg:border-b-0 lg:border-r">
+<section class="mx-auto w-full max-w-6xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_100px_-40px_rgba(15,23,42,0.45)]">
+    <div class="grid gap-0 lg:grid-cols-[1.05fr,0.95fr]">
+        <div class="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(148,163,184,0.02))] p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
             <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                 Security Center
             </span>
 
-            <h2 class="mt-4 text-3xl font-semibold tracking-tight text-slate-950">{{ $title }}</h2>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{{ $description }}</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">{{ $title }}</h2>
+            <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">{{ $description }}</p>
 
             @if (session('vaultic.status'))
                 <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
@@ -48,7 +56,7 @@
                     Sign in first to register or manage passkeys for this account.
                 </div>
             @else
-                <div class="mt-8 rounded-[28px] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                <div class="mt-8 rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-950">{{ $registerTitle }}</h3>
@@ -91,11 +99,11 @@
             @endif
         </div>
 
-        <div class="p-6 sm:p-8">
-            <div class="flex items-center justify-between gap-3">
+        <div class="p-6 sm:p-8 lg:p-10 lg:pr-12 xl:pr-14">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h3 class="text-xl font-semibold text-slate-950">Registered authenticators</h3>
-                    <p class="mt-1 text-sm text-slate-500">Review every passkey currently linked to this account.</p>
+                    <p class="mt-1 text-sm leading-6 text-slate-500">Review every passkey currently linked to this account.</p>
                 </div>
                 <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                     {{ $resolvedPasskeys->count() }} total
@@ -108,16 +116,64 @@
                     <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-600">{{ $emptyDescription }}</p>
                 </div>
             @else
-                <div class="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
+                <div class="mt-6 space-y-4 sm:hidden">
+                    @foreach ($resolvedPasskeys as $passkey)
+                        <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h4 class="truncate text-sm font-semibold text-slate-950">{{ $passkey->name }}</h4>
+                                    @if ($passkey->aaguid)
+                                        <p class="mt-1 break-all text-xs text-slate-500">AAGUID {{ $formatAaguid((string) $passkey->aaguid) }}</p>
+                                    @endif
+                                </div>
+
+                                @if ($canDeletePasskey)
+                                    <form method="POST" action="{{ route($deleteRouteName, $passkey) }}" class="shrink-0">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+
+                            <dl class="mt-4 grid gap-3 text-sm text-slate-600">
+                                <div class="rounded-2xl border border-white bg-white px-3 py-2">
+                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Credential</dt>
+                                    <dd class="mt-1 font-mono text-xs text-slate-700">{{ \Illuminate\Support\Str::limit($passkey->credential_id, 26) }}</dd>
+                                </div>
+                                <div class="rounded-2xl border border-white bg-white px-3 py-2">
+                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Last used</dt>
+                                    <dd class="mt-1 text-sm text-slate-700">{{ optional($passkey->last_used_at)->diffForHumans() ?: 'Never used' }}</dd>
+                                </div>
+                                <div class="rounded-2xl border border-white bg-white px-3 py-2">
+                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Last IP</dt>
+                                    <dd class="mt-1 break-all font-mono text-xs text-slate-700">{{ $passkey->last_used_ip ?: 'Not available yet' }}</dd>
+                                </div>
+                                <div class="rounded-2xl border border-white bg-white px-3 py-2">
+                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Added</dt>
+                                    <dd class="mt-1 text-sm text-slate-700">{{ optional($passkey->created_at)->format('Y-m-d H:i') ?: 'Unknown' }}</dd>
+                                </div>
+                            </dl>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200 shadow-sm sm:block">
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
+                        <table class="w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
                             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                 <tr>
                                     <th class="px-5 py-4">Device</th>
                                     <th class="px-5 py-4">Credential</th>
                                     <th class="px-5 py-4">Last used</th>
+                                    <th class="px-5 py-4">Last IP</th>
                                     <th class="px-5 py-4">Added</th>
-                                    <th class="px-5 py-4 text-right">Action</th>
+                                    <th class="px-5 py-4 pr-8 text-right lg:pr-10">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 bg-white align-top">
@@ -126,14 +182,15 @@
                                         <td class="px-5 py-4">
                                             <div class="font-semibold text-slate-900">{{ $passkey->name }}</div>
                                             @if ($passkey->aaguid)
-                                                <div class="mt-1 text-xs text-slate-500">AAGUID {{ $passkey->aaguid }}</div>
+                                                <div class="mt-1 break-all text-xs text-slate-500">AAGUID {{ $formatAaguid((string) $passkey->aaguid) }}</div>
                                             @endif
                                         </td>
                                         <td class="px-5 py-4 font-mono text-xs text-slate-500">{{ \Illuminate\Support\Str::limit($passkey->credential_id, 24) }}</td>
                                         <td class="px-5 py-4 text-slate-600">{{ optional($passkey->last_used_at)->diffForHumans() ?: 'Never used' }}</td>
+                                        <td class="px-5 py-4 font-mono text-xs text-slate-500">{{ $passkey->last_used_ip ?: 'Not available yet' }}</td>
                                         <td class="px-5 py-4 text-slate-600">{{ optional($passkey->created_at)->format('Y-m-d H:i') ?: 'Unknown' }}</td>
-                                        <td class="px-5 py-4 text-right">
-                                            @if (\Illuminate\Support\Facades\Route::has($deleteRouteName))
+                                        <td class="px-5 py-4 pr-8 text-right lg:pr-10">
+                                            @if ($canDeletePasskey)
                                                 <form method="POST" action="{{ route($deleteRouteName, $passkey) }}" class="inline-flex">
                                                     @csrf
                                                     @method('DELETE')
