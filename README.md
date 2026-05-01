@@ -6,7 +6,7 @@ This v1.0 release is optimized for legacy projects.
 
 ## Compatibility
 
-- PHP `^7.1`
+- PHP `^7.1.3`
 - Laravel `5.5 - 5.8`
 
 ## Architecture
