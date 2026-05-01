@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Data;
 
-class RegistrationResult
+readonly class RegistrationResult
 {
     public function __construct(
         private string $credentialId,

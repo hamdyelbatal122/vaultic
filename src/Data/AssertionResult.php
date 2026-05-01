@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Data;
 
-class AssertionResult
+readonly class AssertionResult
 {
     public function __construct(
         private string $credentialId,

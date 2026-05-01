@@ -14,8 +14,8 @@ class PasskeyAuthenticated
     use SerializesModels;
 
     public function __construct(
-        public mixed $user,
-        public Passkey $passkey,
+        public readonly mixed $user,
+        public readonly Passkey $passkey,
     ) {
     }
 }
