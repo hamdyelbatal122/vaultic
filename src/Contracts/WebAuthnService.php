@@ -21,13 +21,13 @@ interface WebAuthnService
     public function registerPasskey($user, array $payload, $guardName = null);
 
     /**
-     * @param string $identifier
+     * @param string|null $identifier
      * @return array<string, mixed>
      */
     public function buildAuthenticationOptions($identifier, $guardName = null);
 
     /**
-     * @param string $identifier
+     * @param string|null $identifier
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */

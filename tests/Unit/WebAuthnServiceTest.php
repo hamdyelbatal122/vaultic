@@ -181,6 +181,51 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame('cred-admin', $options['allowCredentials'][0]['id']);
     }
 
+    public function test_it_authenticates_without_identifier_using_discoverable_passkey()
+    {
+        $user = TestUser::query()->create([
+            'email' => 'discoverable@example.com',
+            'name' => 'Discoverable User',
+        ]);
+
+        Passkey::query()->create([
+            'authenticatable_type' => TestUser::class,
+            'authenticatable_id' => (string) $user->getAuthIdentifier(),
+            'name' => 'Security Key',
+            'credential_id' => 'cred-discoverable',
+            'public_key' => 'public-key',
+            'sign_count' => 1,
+        ]);
+
+        $service = $this->makeService(new class implements ApiTokenIssuer {
+            public function issueToken($authenticatable, $guardName, array $payload = [])
+            {
+                return [];
+            }
+        });
+
+        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
+            public function login($user, $remember = false)
+            {
+            }
+        });
+
+        $options = $service->buildAuthenticationOptions(null, 'web');
+
+        $this->assertArrayHasKey('vaultic', $options);
+        $this->assertArrayHasKey('challenge_key', $options['vaultic']);
+        $this->assertSame([], $options['allowCredentials']);
+
+        $result = $service->authenticate(null, [
+            'id' => 'cred-discoverable',
+            'challenge_key' => $options['vaultic']['challenge_key'],
+        ], 'web', true);
+
+        $this->assertSame(200, $result['status']);
+        $this->assertSame('web', $result['body']['guard']);
+        $this->assertTrue($result['body']['stateful']);
+    }
+
     /**
      * @param ApiTokenIssuer $tokenIssuer
      * @return WebAuthnService

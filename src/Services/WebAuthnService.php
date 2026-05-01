@@ -153,14 +153,18 @@ class WebAuthnService implements WebAuthnServiceContract
     }
 
     /**
-     * @param string $identifier
+     * @param string|null $identifier
      * @return array<string, mixed>
      */
     public function buildAuthenticationOptions($identifier, $guardName = null)
     {
         $guardConfig = $this->getGuardConfig($guardName);
-        $user = $this->resolveUserByIdentifier($identifier, $guardConfig);
-        $challenge = $this->challengeStore->issue('authenticate', $identifier);
+        $normalizedIdentifier = is_string($identifier) ? trim($identifier) : '';
+        $user = $normalizedIdentifier !== '' ? $this->resolveUserByIdentifier($normalizedIdentifier, $guardConfig) : null;
+        $challengeKey = $normalizedIdentifier !== ''
+            ? $normalizedIdentifier
+            : 'discoverable:'.(string) $guardConfig['guard'].':'.bin2hex(random_bytes(16));
+        $challenge = $this->challengeStore->issue('authenticate', $challengeKey);
 
         return [
             'challenge' => $challenge,
@@ -173,12 +177,13 @@ class WebAuthnService implements WebAuthnServiceContract
             'vaultic' => [
                 'guard' => (string) $guardConfig['guard'],
                 'stateful' => (bool) $guardConfig['stateful'],
+                'challenge_key' => $challengeKey,
             ],
         ];
     }
 
     /**
-     * @param string $identifier
+     * @param string|null $identifier
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
@@ -186,12 +191,16 @@ class WebAuthnService implements WebAuthnServiceContract
     {
         $guardConfig = $this->getGuardConfig($guardName);
         $isStateful = $stateful === null ? (bool) $guardConfig['stateful'] : (bool) $stateful;
-        $challenge = $this->challengeStore->pull('authenticate', $identifier);
+        $normalizedIdentifier = is_string($identifier) ? trim($identifier) : '';
+        $challengeKey = isset($payload['challenge_key']) && is_string($payload['challenge_key'])
+            ? trim((string) $payload['challenge_key'])
+            : $normalizedIdentifier;
+        $challenge = $challengeKey !== '' ? $this->challengeStore->pull('authenticate', $challengeKey) : null;
 
         if ($challenge === null) {
-            Event::dispatch(new AuthenticationFailed('Expired authentication challenge.', null, $identifier));
+            Event::dispatch(new AuthenticationFailed('Expired authentication challenge.', null, $normalizedIdentifier));
 
-            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
+            return $this->fallbackResponse($normalizedIdentifier, $guardConfig, $isStateful);
         }
 
         try {
@@ -204,37 +213,44 @@ class WebAuthnService implements WebAuthnServiceContract
             Event::dispatch(new AuthenticationFailed(
                 $exception->getMessage(),
                 isset($payload['id']) ? (string) $payload['id'] : null,
-                $identifier
+                $normalizedIdentifier
             ));
 
-            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
+            return $this->fallbackResponse($normalizedIdentifier, $guardConfig, $isStateful);
         }
 
-        $user = $this->resolveUserByIdentifier($identifier, $guardConfig);
+        $user = $normalizedIdentifier !== '' ? $this->resolveUserByIdentifier($normalizedIdentifier, $guardConfig) : null;
         $passkey = $this->passkeyRepository->findByCredentialId($result->getCredentialId());
         $authenticatable = $passkey ? $passkey->authenticatable : null;
 
+        $matchesRequestedUser = $user !== null
+            && $authenticatable !== null
+            && get_class($authenticatable) === get_class($user)
+            && (string) $authenticatable->getAuthIdentifier() === (string) $user->getAuthIdentifier();
+
+        $matchesGuardModel = $authenticatable !== null
+            && is_a($authenticatable, (string) $guardConfig['provider_model']);
+
         if (
-            $user === null
-            || $passkey === null
+            $passkey === null
             || $authenticatable === null
-            || get_class($authenticatable) !== get_class($user)
-            || (string) $authenticatable->getAuthIdentifier() !== (string) $user->getAuthIdentifier()
+            || ! $matchesGuardModel
+            || ($normalizedIdentifier !== '' && ! $matchesRequestedUser)
         ) {
             Event::dispatch(new AuthenticationFailed(
                 'The credential does not belong to the requested account.',
                 $result->getCredentialId(),
-                $identifier
+                $normalizedIdentifier
             ));
 
-            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
+            return $this->fallbackResponse($normalizedIdentifier, $guardConfig, $isStateful);
         }
 
         if ((int) $passkey->sign_count > 0 && (int) $result->getSignCount() < (int) $passkey->sign_count) {
             Event::dispatch(new AuthenticationFailed(
                 'Passkey sign counter regression detected.',
                 $result->getCredentialId(),
-                $identifier
+                $normalizedIdentifier
             ));
 
             return [
