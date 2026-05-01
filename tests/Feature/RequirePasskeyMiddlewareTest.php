@@ -1,20 +1,30 @@
 <?php
 
-declare(strict_types=1);
+namespace Hamzi\Vaultic\Tests\Feature;
 
 use Illuminate\Support\Facades\Route;
+use Hamzi\Vaultic\Tests\TestCase;
 
-it('blocks sensitive routes when no passkey session exists', function (): void {
-    Route::middleware(['web', 'passkey.required'])->get('/_vaultic/protected', static fn () => 'ok');
+class RequirePasskeyMiddlewareTest extends TestCase
+{
+    public function test_it_blocks_sensitive_routes_when_session_is_missing()
+    {
+        Route::middleware(['web', 'passkey.required'])->get('/_vaultic/protected', function () {
+            return 'ok';
+        });
 
-    $this->get('/_vaultic/protected')->assertForbidden();
-});
+        $this->get('/_vaultic/protected')->assertStatus(403);
+    }
 
-it('allows sensitive routes after passkey session is set', function (): void {
-    Route::middleware(['web', 'passkey.required'])->get('/_vaultic/allowed', static fn () => 'ok');
+    public function test_it_allows_sensitive_routes_when_session_flag_exists()
+    {
+        Route::middleware(['web', 'passkey.required'])->get('/_vaultic/allowed', function () {
+            return 'ok';
+        });
 
-    $this->withSession(['vaultic.passkeys.authenticated' => true])
-        ->get('/_vaultic/allowed')
-        ->assertOk()
-        ->assertSee('ok');
-});
+        $this->withSession(['vaultic.passkeys.authenticated' => true])
+            ->get('/_vaultic/allowed')
+            ->assertStatus(200)
+            ->assertSee('ok');
+    }
+}

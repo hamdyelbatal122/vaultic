@@ -1,14 +1,38 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Hamzi\Vaultic\Data;
 
-final readonly class AssertionResult
+class AssertionResult
 {
-    public function __construct(
-        public string $credentialId,
-        public int $signCount,
-    ) {
+    /** @var string */
+    private $credentialId;
+
+    /** @var int */
+    private $signCount;
+
+    /**
+     * @param string $credentialId
+     * @param int $signCount
+     */
+    public function __construct($credentialId, $signCount)
+    {
+        $this->credentialId = $credentialId;
+        $this->signCount = $signCount;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCredentialId()
+    {
+        return $this->credentialId;
+    }
+
+    /**
+     * @return int
+     */
+    public function getSignCount()
+    {
+        return $this->signCount;
     }
 }

@@ -1,21 +1,33 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Hamzi\Vaultic\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class AuthenticationFailed
+class AuthenticationFailed
 {
     use Dispatchable;
     use SerializesModels;
 
-    public function __construct(
-        public readonly string $reason,
-        public readonly ?string $credentialId = null,
-        public readonly ?string $userIdentifier = null,
-    ) {
+    /** @var string */
+    public $reason;
+
+    /** @var string|null */
+    public $credentialId;
+
+    /** @var string|null */
+    public $userIdentifier;
+
+    /**
+     * @param string $reason
+     * @param string|null $credentialId
+     * @param string|null $userIdentifier
+     */
+    public function __construct($reason, $credentialId = null, $userIdentifier = null)
+    {
+        $this->reason = $reason;
+        $this->credentialId = $credentialId;
+        $this->userIdentifier = $userIdentifier;
     }
 }

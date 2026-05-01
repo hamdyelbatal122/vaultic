@@ -1,10 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
 return [
     'rp' => [
-        'id' => env('VAULTIC_RP_ID', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost'),
+        'id' => env('VAULTIC_RP_ID', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost'),
         'name' => env('VAULTIC_RP_NAME', env('APP_NAME', 'Laravel')),
     ],
 
@@ -16,7 +14,7 @@ return [
 
     'rate_limit' => [
         'attempts' => (int) env('VAULTIC_RATE_LIMIT_ATTEMPTS', 10),
-        'decay_seconds' => (int) env('VAULTIC_RATE_LIMIT_DECAY', 60),
+        'decay_minutes' => (int) env('VAULTIC_RATE_LIMIT_DECAY_MINUTES', 1),
     ],
 
     'routes' => [
@@ -26,7 +24,7 @@ return [
         'name_prefix' => 'vaultic.',
     ],
 
-    'user_model' => env('VAULTIC_USER_MODEL', \App\Models\User::class),
+    'user_model' => env('VAULTIC_USER_MODEL', \App\User::class),
     'user_identifier_column' => env('VAULTIC_USER_IDENTIFIER_COLUMN', 'email'),
     'redirect_after_login' => env('VAULTIC_REDIRECT_AFTER_LOGIN', '/dashboard'),
     'challenge_timeout_ms' => (int) env('VAULTIC_CHALLENGE_TIMEOUT_MS', 60000),

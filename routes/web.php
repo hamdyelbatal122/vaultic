@@ -1,30 +1,32 @@
 <?php
 
-declare(strict_types=1);
-
 use Illuminate\Support\Facades\Route;
 use Hamzi\Vaultic\Http\Controllers\WebAuthnController;
+
+$rateLimitAttempts = (int) config('vaultic.rate_limit.attempts', 10);
+$rateLimitDecayMinutes = (int) config('vaultic.rate_limit.decay_minutes', 1);
+$throttleMiddleware = sprintf('throttle:%d,%d', $rateLimitAttempts, $rateLimitDecayMinutes);
 
 Route::middleware(config('vaultic.routes.middleware', ['web']))
     ->prefix(config('vaultic.routes.prefix', 'passkeys'))
     ->name(config('vaultic.routes.name_prefix', 'vaultic.'))
-    ->group(function (): void {
+    ->group(function () use ($throttleMiddleware) {
         Route::middleware(array_filter(config('vaultic.routes.authenticated_middleware', ['auth'])))
-            ->group(function (): void {
+            ->group(function () use ($throttleMiddleware) {
                 Route::post('/register/options', [WebAuthnController::class, 'registrationOptions'])
-                    ->middleware('throttle:vaultic.passkeys')
+                    ->middleware($throttleMiddleware)
                     ->name('register.options');
 
                 Route::post('/register', [WebAuthnController::class, 'register'])
-                    ->middleware('throttle:vaultic.passkeys')
+                    ->middleware($throttleMiddleware)
                     ->name('register.store');
             });
 
         Route::post('/authenticate/options', [WebAuthnController::class, 'authenticationOptions'])
-            ->middleware('throttle:vaultic.passkeys')
+            ->middleware($throttleMiddleware)
             ->name('authenticate.options');
 
         Route::post('/authenticate', [WebAuthnController::class, 'authenticate'])
-            ->middleware('throttle:vaultic.passkeys')
+            ->middleware($throttleMiddleware)
             ->name('authenticate.store');
     });
