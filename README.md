@@ -1,4 +1,4 @@
-# Vaultic v4.0
+# Vaultic 
 
 Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with challenge storage, fallback authentication flows, multi-guard support, and web/API-ready response handling.
 
