@@ -60,30 +60,20 @@ php artisan migrate
 
 Laravel package discovery is enabled by default. Manual registration remains available when needed:
 
-```php
-// config/app.php
-'providers' => [
-    Hamzi\Vaultic\VaulticServiceProvider::class,
-],
-```
+
 
 ## Configuration
 
 Vaultic ships with [config/vaultic.php](config/vaultic.php).
 
-Vaultic no longer requires package-specific `.env` entries for the default setup.
+'Vaultic no longer requires package-specific `.env` entries for the default setup.
 
-By default it derives the relying party from the main Laravel application settings:
-
-```env
-```
-
-Package-specific customization should now live in the published backend config:
+By default, Vaultic derives the relying party from your main Laravel application settings (APP_URL, APP_NAME) and uses the default cache store configured in your app:
 
 ```php
 // config/vaultic.php
 'cache' => [
-    'store' => 'redis',
+    'store' => config('cache.default', 'file'), // Uses your app's default cache store
     'prefix' => 'vaultic:challenge:',
     'ttl' => 300,
 ],
@@ -109,7 +99,6 @@ Package-specific customization should now live in the published backend config:
     'attempts' => 10,
     'decay_seconds' => 60,
 ],
-
 'fallback' => [
     'driver' => 'password',
 ],
