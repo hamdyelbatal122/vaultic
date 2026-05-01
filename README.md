@@ -6,7 +6,7 @@ This v1.2 release is optimized for Laravel 6 projects.
 
 ## Compatibility
 
-- PHP `^7.2`
+- PHP `^7.2.5`
 - Laravel `6.x`
 
 ## Architecture
