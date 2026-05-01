@@ -15,6 +15,7 @@ return [
     'rate_limit' => [
         'attempts' => (int) env('VAULTIC_RATE_LIMIT_ATTEMPTS', 10),
         'decay_minutes' => (int) env('VAULTIC_RATE_LIMIT_DECAY_MINUTES', 1),
+        'decay_seconds' => (int) env('VAULTIC_RATE_LIMIT_DECAY_SECONDS', 60),
     ],
 
     'routes' => [

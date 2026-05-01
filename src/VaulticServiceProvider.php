@@ -2,6 +2,9 @@
 
 namespace Hamzi\Vaultic;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Contracts\WebAuthnService as WebAuthnServiceContract;
@@ -53,5 +56,23 @@ class VaulticServiceProvider extends ServiceProvider
         if (method_exists($this, 'loadMigrationsFrom')) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
+
+        $this->registerRateLimiter();
+    }
+
+    private function registerRateLimiter()
+    {
+        if (!class_exists(RateLimiter::class) || !method_exists(RateLimiter::class, 'for')) {
+            return;
+        }
+
+        RateLimiter::for('vaultic.passkeys', function (Request $request) {
+            $attempts = (int) config('vaultic.rate_limit.attempts', 10);
+            $decaySeconds = (int) config('vaultic.rate_limit.decay_seconds', 60);
+            $decayMinutes = max(1, (int) ceil($decaySeconds / 60));
+
+            return Limit::perMinutes($decayMinutes, $attempts)
+                ->by($request->ip().'|'.$request->input('identifier', ''));
+        });
     }
 }
