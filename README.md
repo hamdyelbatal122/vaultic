@@ -20,7 +20,7 @@
 ## Installation
 
 ```bash
-composer require laravel/vaultic
+composer require hamzi/vaultic
 ```
 
 Publish assets:
