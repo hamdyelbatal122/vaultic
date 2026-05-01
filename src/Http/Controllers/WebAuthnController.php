@@ -2,6 +2,7 @@
 
 namespace Hamzi\Vaultic\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -26,13 +27,14 @@ class WebAuthnController extends Controller
      */
     public function registrationOptions(Request $request)
     {
-        $user = $request->user();
+        list($guardName) = $this->resolveChannelContext($request);
+        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
 
         if ($user === null) {
             abort(401);
         }
 
-        return response()->json($this->service->buildRegistrationOptions($user));
+        return response()->json($this->service->buildRegistrationOptions($user, $guardName));
     }
 
     /**
@@ -45,13 +47,14 @@ class WebAuthnController extends Controller
             'name' => ['nullable', 'string', 'max:' . (int) config('vaultic.device_name_max_length', 100)],
         ]);
 
-        $user = $request->user();
+        list($guardName) = $this->resolveChannelContext($request);
+        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
 
         if ($user === null) {
             abort(401);
         }
 
-        $result = $this->service->registerPasskey($user, $request->all());
+        $result = $this->service->registerPasskey($user, $request->all(), $guardName);
 
         return response()->json($result['body'], $result['status']);
     }
@@ -62,12 +65,17 @@ class WebAuthnController extends Controller
      */
     public function authenticationOptions(Request $request)
     {
+        list($guardName) = $this->resolveChannelContext($request);
         $validated = $request->validate([
             'identifier' => ['required', 'string', 'max:255'],
+            'guard' => ['nullable', 'string', 'max:50'],
         ]);
 
         return response()->json(
-            $this->service->buildAuthenticationOptions((string) $validated['identifier'])
+            $this->service->buildAuthenticationOptions(
+                (string) $validated['identifier'],
+                isset($validated['guard']) ? (string) $validated['guard'] : $guardName
+            )
         );
     }
 
@@ -77,11 +85,14 @@ class WebAuthnController extends Controller
      */
     public function authenticate(Request $request)
     {
+        list($guardName, $stateful) = $this->resolveChannelContext($request);
         $validated = $request->validate([
             'identifier' => ['required', 'string', 'max:255'],
+            'guard' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $result = $this->service->authenticate((string) $validated['identifier'], $request->all());
+        $resolvedGuard = isset($validated['guard']) ? (string) $validated['guard'] : $guardName;
+        $result = $this->service->authenticate((string) $validated['identifier'], $request->all(), $resolvedGuard, $stateful);
 
         if (isset($result['session']) && is_array($result['session'])) {
             foreach ($result['session'] as $key => $value) {
@@ -90,5 +101,21 @@ class WebAuthnController extends Controller
         }
 
         return response()->json($result['body'], $result['status']);
+    }
+
+    /**
+     * @param Request $request
+     * @return array{0:string,1:bool}
+     */
+    private function resolveChannelContext(Request $request): array
+    {
+        $routeName = $request->route() ? (string) $request->route()->getName() : '';
+        $channel = str_starts_with($routeName, 'vaultic.api.') ? 'api' : 'web';
+        $channelConfig = (array) config('vaultic.routes.'.$channel, []);
+
+        return [
+            (string) ($channelConfig['guard'] ?? config('vaultic.auth.default_guard', 'web')),
+            (bool) ($channelConfig['stateful'] ?? true),
+        ];
     }
 }

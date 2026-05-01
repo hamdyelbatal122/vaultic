@@ -6,11 +6,13 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Contracts\WebAuthnService as WebAuthnServiceContract;
 use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
 use Hamzi\Vaultic\Http\Middleware\RequirePasskey;
 use Hamzi\Vaultic\Repositories\EloquentPasskeyRepository;
+use Hamzi\Vaultic\Services\NullApiTokenIssuer;
 use Hamzi\Vaultic\Services\ChallengeStore;
 use Hamzi\Vaultic\Services\NullWebAuthnVerifier;
 use Hamzi\Vaultic\Services\WebAuthnService;
@@ -32,6 +34,7 @@ class VaulticServiceProvider extends ServiceProvider
         $this->app->bind(PasskeyRepository::class, EloquentPasskeyRepository::class);
         $this->app->bind(WebAuthnServiceContract::class, WebAuthnService::class);
 
+        $this->app->bind(ApiTokenIssuer::class, NullApiTokenIssuer::class);
         $this->app->bind(WebAuthnVerifier::class, NullWebAuthnVerifier::class);
     }
 

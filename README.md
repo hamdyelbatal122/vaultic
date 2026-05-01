@@ -1,6 +1,6 @@
 # Vaultic v4.0
 
-Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with Redis-backed challenge storage and fallback authentication flows.
+Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with challenge storage, fallback authentication flows, multi-guard support, and web/API-ready response handling.
 
 This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runtimes.
 
@@ -23,8 +23,6 @@ This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 | v3.3.1 | 8.2+ | 12.x |
 | v4.0.0 | 8.3+ | 13.x |
 
-See full release status in [docs/releases/RELEASES_STATUS.md](docs/releases/RELEASES_STATUS.md).
-
 ## Architecture
 
 Vaultic uses a layered architecture to keep framework glue and business logic separated:
@@ -32,11 +30,19 @@ Vaultic uses a layered architecture to keep framework glue and business logic se
 - HTTP Layer: controllers + middleware
 - Service Layer: WebAuthn orchestration and fallback decisions
 - Repository Layer: passkey persistence abstraction
-- Contracts Layer: interfaces for verifier, service, and repository
+- Contracts Layer: interfaces for verifier, token issuing, service, and repository
 
 Flow:
 
 - Controller -> Service -> Repository -> Eloquent model
+
+## Highlights
+
+- Multi-guard authentication with per-guard model and identifier resolution
+- Stateful web flows and stateless API flows from the same package endpoints
+- UI-agnostic JSON endpoints that work with Blade, Livewire, Inertia, Vue, React, or native mobile clients
+- Polymorphic passkey ownership, so passkeys can belong to different authenticatable models
+- Optional token issuing abstraction for API guards, including a built-in Sanctum-friendly issuer
 
 ## Installation
 
@@ -78,6 +84,14 @@ VAULTIC_RP_NAME="My App"
 
 VAULTIC_USER_MODEL=App\\Models\\User
 VAULTIC_USER_IDENTIFIER_COLUMN=email
+VAULTIC_DEFAULT_GUARD=web
+
+VAULTIC_WEB_GUARD=web
+VAULTIC_WEB_AUTH_MIDDLEWARE=auth:web
+
+VAULTIC_API_GUARD=api
+VAULTIC_API_AUTH_MIDDLEWARE=auth:api
+VAULTIC_API_TOKEN_ISSUER=Hamzi\\Vaultic\\Services\\SanctumApiTokenIssuer
 
 VAULTIC_RATE_LIMIT_ATTEMPTS=10
 VAULTIC_RATE_LIMIT_DECAY_MINUTES=1
@@ -85,16 +99,33 @@ VAULTIC_RATE_LIMIT_DECAY_MINUTES=1
 VAULTIC_FALLBACK_DRIVER=password
 ```
 
+Guard configuration lives under `auth.guards` in [config/vaultic.php](config/vaultic.php). Each guard can define:
+
+- `provider_model`
+- `identifier_column`
+- `stateful`
+- `remember`
+- `token_issuer`
+
 ## Routes
 
-Default route prefix is `/passkeys` with name prefix `vaultic.`.
+Vaultic exposes two channels by default:
+
+- Web routes under `/passkeys` with name prefix `vaultic.`
+- API routes under `/api/passkeys` with name prefix `vaultic.api.`
 
 - `POST /passkeys/register/options` -> `vaultic.register.options`
 - `POST /passkeys/register` -> `vaultic.register.store`
 - `POST /passkeys/authenticate/options` -> `vaultic.authenticate.options`
 - `POST /passkeys/authenticate` -> `vaultic.authenticate.store`
+- `POST /api/passkeys/register/options` -> `vaultic.api.register.options`
+- `POST /api/passkeys/register` -> `vaultic.api.register.store`
+- `POST /api/passkeys/authenticate/options` -> `vaultic.api.authenticate.options`
+- `POST /api/passkeys/authenticate` -> `vaultic.api.authenticate.store`
 
 Rate limiting uses named limiter middleware: `throttle:vaultic.passkeys`.
+
+All endpoints return JSON, so the package is not tied to any UI stack.
 
 ## WebAuthn Verifier Contract
 
@@ -106,6 +137,48 @@ $this->app->bind(
     App\Security\MyWebAuthnVerifier::class
 );
 ```
+
+If no verifier is bound, Vaultic throws a clear runtime exception instead of silently failing.
+
+## API Token Issuing
+
+For stateless guards, Vaultic can return token payloads after a successful passkey assertion.
+
+Bind your own issuer:
+
+```php
+$this->app->bind(
+    Hamzi\Vaultic\Contracts\ApiTokenIssuer::class,
+    App\Auth\IssueVaulticToken::class
+);
+```
+
+Or use the included Sanctum-oriented issuer when your authenticatable model exposes `createToken()`:
+
+```php
+'auth' => [
+    'guards' => [
+        'api' => [
+            'guard' => 'sanctum',
+            'provider_model' => App\Models\User::class,
+            'identifier_column' => 'email',
+            'stateful' => false,
+            'token_issuer' => Hamzi\Vaultic\Services\SanctumApiTokenIssuer::class,
+        ],
+    ],
+],
+```
+
+Successful API authentication responses include a `tokens` array in the JSON payload.
+
+## Frontend Integration
+
+Vaultic only owns the backend WebAuthn flow. You can pair it with any client that can call the JSON endpoints and forward WebAuthn browser payloads.
+
+- Blade or Livewire forms
+- Inertia or SPA frontends
+- Native mobile or hybrid clients through API routes
+- Admin panels with separate guards and authenticatable models
 
 ## Middleware
 
@@ -135,21 +208,7 @@ Includes:
 
 - unit tests for challenge issuance/pull behavior
 - feature tests for route registration and middleware behavior
-
-## Professional Releases
-
-Vaultic includes an automated release publisher that generates professional GitHub release titles and descriptions for all tags.
-
-```bash
-bash scripts/publish_releases.sh
-```
-
-Authentication:
-
-- Option 1: `gh auth login`
-- Option 2: `export GITHUB_TOKEN=<token_with_repo_scope>`
-
-Recommended release matrix is documented in [docs/releases/RELEASES_STATUS.md](docs/releases/RELEASES_STATUS.md).
+- service tests for multi-guard resolution, stateful login flow, and stateless token payloads
 
 ## Repository Standards
 
@@ -161,4 +220,4 @@ Recommended release matrix is documented in [docs/releases/RELEASES_STATUS.md](d
 
 ## License
 
-MIT
+vaultic is open-sourced software licensed under the MIT license. See [LICENSE](LICENSE) for more details.

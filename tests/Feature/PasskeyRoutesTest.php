@@ -10,8 +10,12 @@ class PasskeyRoutesTest extends TestCase
     {
         $registerOptionsPath = route('vaultic.register.options', [], false);
         $authenticatePath = route('vaultic.authenticate.store', [], false);
+        $apiRegisterOptionsPath = route('vaultic.api.register.options', [], false);
+        $apiAuthenticatePath = route('vaultic.api.authenticate.store', [], false);
 
-        $this->assertContains('/passkeys/register/options', $registerOptionsPath);
-        $this->assertContains('/passkeys/authenticate', $authenticatePath);
+        $this->assertStringContainsString('/passkeys/register/options', $registerOptionsPath);
+        $this->assertStringContainsString('/passkeys/authenticate', $authenticatePath);
+        $this->assertStringContainsString('/api/passkeys/register/options', $apiRegisterOptionsPath);
+        $this->assertStringContainsString('/api/passkeys/authenticate', $apiAuthenticatePath);
     }
 }

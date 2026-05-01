@@ -2,12 +2,14 @@
 
 namespace Hamzi\Vaultic\Services;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Contracts\WebAuthnService as WebAuthnServiceContract;
 use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
@@ -27,26 +29,37 @@ class WebAuthnService implements WebAuthnServiceContract
     /** @var PasskeyRepository */
     private $passkeyRepository;
 
+    /** @var ApiTokenIssuer */
+    private $apiTokenIssuer;
+
     /**
      * @param WebAuthnVerifier $verifier
      * @param ChallengeStore $challengeStore
      * @param PasskeyRepository $passkeyRepository
+     * @param ApiTokenIssuer $apiTokenIssuer
      */
-    public function __construct(WebAuthnVerifier $verifier, ChallengeStore $challengeStore, PasskeyRepository $passkeyRepository)
+    public function __construct(
+        WebAuthnVerifier $verifier,
+        ChallengeStore $challengeStore,
+        PasskeyRepository $passkeyRepository,
+        ApiTokenIssuer $apiTokenIssuer
+    )
     {
         $this->verifier = $verifier;
         $this->challengeStore = $challengeStore;
         $this->passkeyRepository = $passkeyRepository;
+        $this->apiTokenIssuer = $apiTokenIssuer;
     }
 
     /**
      * @param mixed $user
      * @return array<string, mixed>
      */
-    public function buildRegistrationOptions($user)
+    public function buildRegistrationOptions($user, $guardName = null)
     {
         $userId = (string) $user->getAuthIdentifier();
-        $identifierColumn = (string) config('vaultic.user_identifier_column', 'email');
+        $guardConfig = $this->getGuardConfig($guardName);
+        $identifierColumn = (string) $guardConfig['identifier_column'];
 
         $challenge = $this->challengeStore->issue('register', $userId);
 
@@ -69,7 +82,11 @@ class WebAuthnService implements WebAuthnServiceContract
             ], function ($value) {
                 return $value !== null;
             }),
-            'excludeCredentials' => $this->passkeyRepository->listCredentialDescriptorsForUser($user->getAuthIdentifier()),
+            'excludeCredentials' => $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),
+            'vaultic' => [
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => (bool) $guardConfig['stateful'],
+            ],
         ];
     }
 
@@ -78,7 +95,7 @@ class WebAuthnService implements WebAuthnServiceContract
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    public function registerPasskey($user, array $payload)
+    public function registerPasskey($user, array $payload, $guardName = null)
     {
         $userId = (string) $user->getAuthIdentifier();
         $challenge = $this->challengeStore->pull('register', $userId);
@@ -111,7 +128,7 @@ class WebAuthnService implements WebAuthnServiceContract
             ]);
         }
 
-        $passkey = $this->passkeyRepository->createForUser($user->getAuthIdentifier(), [
+        $passkey = $this->passkeyRepository->createForAuthenticatable($user, [
             'name' => isset($payload['name']) && $payload['name'] !== ''
                 ? (string) $payload['name']
                 : 'Unnamed device',
@@ -129,6 +146,7 @@ class WebAuthnService implements WebAuthnServiceContract
             'body' => [
                 'message' => 'Passkey registered successfully.',
                 'credential_id' => $passkey->credential_id,
+                'guard' => (string) $this->getGuardConfig($guardName)['guard'],
             ],
         ];
     }
@@ -137,9 +155,10 @@ class WebAuthnService implements WebAuthnServiceContract
      * @param string $identifier
      * @return array<string, mixed>
      */
-    public function buildAuthenticationOptions($identifier)
+    public function buildAuthenticationOptions($identifier, $guardName = null)
     {
-        $user = $this->resolveUserByIdentifier($identifier);
+        $guardConfig = $this->getGuardConfig($guardName);
+        $user = $this->resolveUserByIdentifier($identifier, $guardConfig);
         $challenge = $this->challengeStore->issue('authenticate', $identifier);
 
         return [
@@ -149,7 +168,11 @@ class WebAuthnService implements WebAuthnServiceContract
             'userVerification' => config('vaultic.user_verification', 'preferred'),
             'allowCredentials' => $user === null
                 ? []
-                : $this->passkeyRepository->listCredentialDescriptorsForUser($user->getAuthIdentifier()),
+                : $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),
+            'vaultic' => [
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => (bool) $guardConfig['stateful'],
+            ],
         ];
     }
 
@@ -158,14 +181,16 @@ class WebAuthnService implements WebAuthnServiceContract
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    public function authenticate($identifier, array $payload)
+    public function authenticate($identifier, array $payload, $guardName = null, $stateful = null)
     {
+        $guardConfig = $this->getGuardConfig($guardName);
+        $isStateful = $stateful === null ? (bool) $guardConfig['stateful'] : (bool) $stateful;
         $challenge = $this->challengeStore->pull('authenticate', $identifier);
 
         if ($challenge === null) {
             Event::dispatch(new AuthenticationFailed('Expired authentication challenge.', null, $identifier));
 
-            return $this->fallbackResponse($identifier);
+            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
         }
 
         try {
@@ -181,20 +206,27 @@ class WebAuthnService implements WebAuthnServiceContract
                 $identifier
             ));
 
-            return $this->fallbackResponse($identifier);
+            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
         }
 
-        $user = $this->resolveUserByIdentifier($identifier);
+        $user = $this->resolveUserByIdentifier($identifier, $guardConfig);
         $passkey = $this->passkeyRepository->findByCredentialId($result->getCredentialId());
+        $authenticatable = $passkey ? $passkey->authenticatable : null;
 
-        if ($user === null || $passkey === null || (string) $passkey->user_id !== (string) $user->getAuthIdentifier() || $passkey->user === null) {
+        if (
+            $user === null
+            || $passkey === null
+            || $authenticatable === null
+            || get_class($authenticatable) !== get_class($user)
+            || (string) $authenticatable->getAuthIdentifier() !== (string) $user->getAuthIdentifier()
+        ) {
             Event::dispatch(new AuthenticationFailed(
                 'The credential does not belong to the requested account.',
                 $result->getCredentialId(),
                 $identifier
             ));
 
-            return $this->fallbackResponse($identifier);
+            return $this->fallbackResponse($identifier, $guardConfig, $isStateful);
         }
 
         if ((int) $passkey->sign_count > 0 && (int) $result->getSignCount() < (int) $passkey->sign_count) {
@@ -212,28 +244,48 @@ class WebAuthnService implements WebAuthnServiceContract
 
         $this->passkeyRepository->markAsUsed($passkey, $result->getSignCount());
 
-        Auth::login($passkey->user);
+        $sessionPayload = [];
+        $tokenPayload = [];
+
+        if ($isStateful) {
+            $this->loginAuthenticatable($authenticatable, $guardConfig);
+            $sessionPayload = [
+                (string) config('vaultic.auth.session_key', 'vaultic.passkeys.authenticated') => true,
+            ];
+        } else {
+            $tokenPayload = $this->issueApiToken($authenticatable, $guardConfig, $payload);
+        }
+
+        Event::dispatch(new PasskeyAuthenticated($authenticatable, $passkey));
 
         return [
             'status' => 200,
             'body' => [
                 'message' => 'Authenticated with passkey.',
                 'redirect_to' => (string) config('vaultic.redirect_after_login', '/dashboard'),
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => $isStateful,
+                'user' => [
+                    'id' => (string) $authenticatable->getAuthIdentifier(),
+                    'type' => get_class($authenticatable),
+                ],
+                'tokens' => $tokenPayload,
             ],
-            'session' => ['vaultic.passkeys.authenticated' => true],
-            'user' => $passkey->user,
+            'session' => $sessionPayload,
+            'user' => $authenticatable,
             'passkey' => $passkey,
         ];
     }
 
     /**
      * @param string $identifier
+     * @param array<string, mixed> $guardConfig
      * @return Model|null
      */
-    private function resolveUserByIdentifier($identifier)
+    private function resolveUserByIdentifier($identifier, array $guardConfig)
     {
-        $modelClass = (string) config('vaultic.user_model', config('auth.providers.users.model'));
-        $identifierColumn = (string) config('vaultic.user_identifier_column', 'email');
+        $modelClass = (string) $guardConfig['provider_model'];
+        $identifierColumn = (string) $guardConfig['identifier_column'];
 
         if (!is_a($modelClass, Model::class, true)) {
             return null;
@@ -244,9 +296,11 @@ class WebAuthnService implements WebAuthnServiceContract
 
     /**
      * @param string $identifier
+     * @param array<string, mixed> $guardConfig
+     * @param bool $stateful
      * @return array<string, mixed>
      */
-    private function fallbackResponse($identifier)
+    private function fallbackResponse($identifier, array $guardConfig, $stateful)
     {
         $fallbackDriver = (string) config('vaultic.fallback.driver', 'password');
 
@@ -268,6 +322,8 @@ class WebAuthnService implements WebAuthnServiceContract
                 'body' => [
                     'message' => 'Passkey failed. Continue with magic link authentication.',
                     'fallback' => 'magic_link',
+                    'guard' => (string) $guardConfig['guard'],
+                    'stateful' => (bool) $stateful,
                     'route_name' => $routeName,
                     'magic_link' => $magicLink,
                 ],
@@ -279,8 +335,66 @@ class WebAuthnService implements WebAuthnServiceContract
             'body' => [
                 'message' => 'Passkey failed. Continue with password login.',
                 'fallback' => 'password',
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => (bool) $stateful,
                 'route_name' => (string) config('vaultic.fallback.password_login_route', 'login'),
             ],
         ];
+    }
+
+    /**
+     * @param string|null $guardName
+     * @return array<string, mixed>
+     */
+    private function getGuardConfig($guardName = null)
+    {
+        $resolvedGuardName = $guardName ?: (string) config('vaultic.auth.default_guard', 'web');
+        $guardConfig = (array) config('vaultic.auth.guards.'.$resolvedGuardName, []);
+
+        return array_merge([
+            'guard' => $resolvedGuardName,
+            'provider_model' => (string) config('vaultic.user_model', \App\Models\User::class),
+            'identifier_column' => (string) config('vaultic.user_identifier_column', 'email'),
+            'stateful' => true,
+            'remember' => false,
+            'token_issuer' => null,
+        ], $guardConfig);
+    }
+
+    /**
+     * @param Authenticatable $authenticatable
+     * @param array<string, mixed> $guardConfig
+     * @return void
+     */
+    private function loginAuthenticatable(Authenticatable $authenticatable, array $guardConfig)
+    {
+        $guard = Auth::guard((string) $guardConfig['guard']);
+
+        if (method_exists($guard, 'login')) {
+            $guard->login($authenticatable, (bool) ($guardConfig['remember'] ?? false));
+        }
+    }
+
+    /**
+     * @param Authenticatable $authenticatable
+     * @param array<string, mixed> $guardConfig
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function issueApiToken(Authenticatable $authenticatable, array $guardConfig, array $payload)
+    {
+        $issuerClass = isset($guardConfig['token_issuer']) && is_string($guardConfig['token_issuer'])
+            ? $guardConfig['token_issuer']
+            : null;
+
+        if ($issuerClass !== null && class_exists($issuerClass)) {
+            $issuer = app($issuerClass);
+
+            if ($issuer instanceof ApiTokenIssuer) {
+                return $issuer->issueToken($authenticatable, (string) $guardConfig['guard'], $payload);
+            }
+        }
+
+        return $this->apiTokenIssuer->issueToken($authenticatable, (string) $guardConfig['guard'], $payload);
     }
 }

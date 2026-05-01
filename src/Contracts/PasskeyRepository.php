@@ -2,15 +2,17 @@
 
 namespace Hamzi\Vaultic\Contracts;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+
 use Hamzi\Vaultic\Models\Passkey;
 
 interface PasskeyRepository
 {
     /**
-     * @param mixed $userId
+     * @param Authenticatable $authenticatable
      * @return array<int, array<string, string>>
      */
-    public function listCredentialDescriptorsForUser($userId);
+    public function listCredentialDescriptorsForAuthenticatable(Authenticatable $authenticatable);
 
     /**
      * @param string $credentialId
@@ -25,11 +27,11 @@ interface PasskeyRepository
     public function credentialExists($credentialId);
 
     /**
-     * @param mixed $userId
+    * @param Authenticatable $authenticatable
      * @param array<string, mixed> $attributes
      * @return Passkey
      */
-    public function createForUser($userId, array $attributes);
+    public function createForAuthenticatable(Authenticatable $authenticatable, array $attributes);
 
     /**
      * @param Passkey $passkey

@@ -5,26 +5,37 @@ use Hamzi\Vaultic\Http\Controllers\WebAuthnController;
 
 $throttleMiddleware = 'throttle:vaultic.passkeys';
 
-Route::middleware(config('vaultic.routes.middleware', ['web']))
-    ->prefix(config('vaultic.routes.prefix', 'passkeys'))
-    ->name(config('vaultic.routes.name_prefix', 'vaultic.'))
-    ->group(function () use ($throttleMiddleware) {
-        Route::middleware(array_filter(config('vaultic.routes.authenticated_middleware', ['auth'])))
-            ->group(function () use ($throttleMiddleware) {
-                Route::post('/register/options', [WebAuthnController::class, 'registrationOptions'])
-                    ->middleware($throttleMiddleware)
-                    ->name('register.options');
+$routeChannels = [
+    'web' => (array) config('vaultic.routes.web', []),
+    'api' => (array) config('vaultic.routes.api', []),
+];
 
-                Route::post('/register', [WebAuthnController::class, 'register'])
-                    ->middleware($throttleMiddleware)
-                    ->name('register.store');
-            });
+foreach ($routeChannels as $channel => $channelConfig) {
+    if (! ($channelConfig['enabled'] ?? false)) {
+        continue;
+    }
 
-        Route::post('/authenticate/options', [WebAuthnController::class, 'authenticationOptions'])
-            ->middleware($throttleMiddleware)
-            ->name('authenticate.options');
+    Route::middleware((array) ($channelConfig['middleware'] ?? []))
+        ->prefix((string) ($channelConfig['prefix'] ?? 'passkeys'))
+        ->name((string) ($channelConfig['name_prefix'] ?? 'vaultic.'))
+        ->group(function () use ($channelConfig, $throttleMiddleware) {
+            Route::middleware(array_filter((array) ($channelConfig['authenticated_middleware'] ?? [])))
+                ->group(function () use ($throttleMiddleware) {
+                    Route::post('/register/options', [WebAuthnController::class, 'registrationOptions'])
+                        ->middleware($throttleMiddleware)
+                        ->name('register.options');
 
-        Route::post('/authenticate', [WebAuthnController::class, 'authenticate'])
-            ->middleware($throttleMiddleware)
-            ->name('authenticate.store');
-    });
+                    Route::post('/register', [WebAuthnController::class, 'register'])
+                        ->middleware($throttleMiddleware)
+                        ->name('register.store');
+                });
+
+            Route::post('/authenticate/options', [WebAuthnController::class, 'authenticationOptions'])
+                ->middleware($throttleMiddleware)
+                ->name('authenticate.options');
+
+            Route::post('/authenticate', [WebAuthnController::class, 'authenticate'])
+                ->middleware($throttleMiddleware)
+                ->name('authenticate.store');
+        });
+}
