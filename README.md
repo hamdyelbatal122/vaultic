@@ -9,6 +9,22 @@ This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 - PHP `^8.3`
 - Laravel `13.x`
 
+## Version Matrix
+
+| Vaultic Tag | PHP | Laravel |
+| --- | --- | --- |
+| v1.0.2 | 7.1.3+ | 5.5-5.8 |
+| v1.2.1 | 7.2.5+ | 6.x |
+| v1.3.0 | 7.2.5+ | 7.x |
+| v2.0.0 | 7.3+ | 8.x |
+| v3.0.1 | 8.0.2+ | 9.x |
+| v3.1.0 | 8.1+ | 10.x |
+| v3.2.1 | 8.2+ | 11.x |
+| v3.3.1 | 8.2+ | 12.x |
+| v4.0.0 | 8.3+ | 13.x |
+
+See full release status in [docs/releases/RELEASES_STATUS.md](docs/releases/RELEASES_STATUS.md).
+
 ## Architecture
 
 Vaultic uses a layered architecture to keep framework glue and business logic separated:
@@ -134,6 +150,14 @@ Authentication:
 - Option 2: `export GITHUB_TOKEN=<token_with_repo_scope>`
 
 Recommended release matrix is documented in [docs/releases/RELEASES_STATUS.md](docs/releases/RELEASES_STATUS.md).
+
+## Repository Standards
+
+- License: [LICENSE](LICENSE)
+- Contribution Guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security Policy: [SECURITY.md](SECURITY.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## License
 
