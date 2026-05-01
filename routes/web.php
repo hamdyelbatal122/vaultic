@@ -18,9 +18,9 @@ foreach ($routeChannels as $channel => $channelConfig) {
     Route::middleware((array) ($channelConfig['middleware'] ?? []))
         ->prefix((string) ($channelConfig['prefix'] ?? 'passkeys'))
         ->name((string) ($channelConfig['name_prefix'] ?? 'vaultic.'))
-        ->group(function () use ($channelConfig, $throttleMiddleware) {
+        ->group(function () use ($channel, $channelConfig, $throttleMiddleware) {
             Route::middleware(array_filter((array) ($channelConfig['authenticated_middleware'] ?? [])))
-                ->group(function () use ($throttleMiddleware) {
+                ->group(function () use ($channel, $throttleMiddleware) {
                     Route::post('/register/options', [WebAuthnController::class, 'registrationOptions'])
                         ->middleware($throttleMiddleware)
                         ->name('register.options');
@@ -28,6 +28,11 @@ foreach ($routeChannels as $channel => $channelConfig) {
                     Route::post('/register', [WebAuthnController::class, 'register'])
                         ->middleware($throttleMiddleware)
                         ->name('register.store');
+
+                    if ($channel === 'web') {
+                        Route::delete('/{passkey}', [WebAuthnController::class, 'destroy'])
+                            ->name('passkeys.destroy');
+                    }
                 });
 
             Route::post('/authenticate/options', [WebAuthnController::class, 'authenticationOptions'])

@@ -2,10 +2,12 @@
 
 namespace Hamzi\Vaultic\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Contracts\WebAuthnService;
 
 class WebAuthnController extends Controller
@@ -101,6 +103,34 @@ class WebAuthnController extends Controller
         }
 
         return response()->json($result['body'], $result['status']);
+    }
+
+    /**
+     * @param Request $request
+     * @param Passkey $passkey
+     * @return JsonResponse|RedirectResponse
+     */
+    public function destroy(Request $request, Passkey $passkey)
+    {
+        list($guardName) = $this->resolveChannelContext($request);
+        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
+
+        if ($user === null) {
+            abort(401);
+        }
+
+        if (! $this->service->deletePasskey($user, $passkey)) {
+            abort(404);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Passkey deleted successfully.',
+                'credential_id' => $passkey->credential_id,
+            ]);
+        }
+
+        return back()->with('vaultic.status', 'Passkey deleted successfully.');
     }
 
     /**

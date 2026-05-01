@@ -16,6 +16,7 @@ use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
 use Hamzi\Vaultic\Events\AuthenticationFailed;
 use Hamzi\Vaultic\Events\PasskeyAuthenticated;
 use Hamzi\Vaultic\Events\PasskeyRegistered;
+use Hamzi\Vaultic\Models\Passkey;
 use Throwable;
 
 class WebAuthnService implements WebAuthnServiceContract
@@ -275,6 +276,16 @@ class WebAuthnService implements WebAuthnServiceContract
             'user' => $authenticatable,
             'passkey' => $passkey,
         ];
+    }
+
+    /**
+     * @param Authenticatable $user
+     * @param Passkey $passkey
+     * @return bool
+     */
+    public function deletePasskey(Authenticatable $user, Passkey $passkey)
+    {
+        return $this->passkeyRepository->deleteForAuthenticatable($user, $passkey);
     }
 
     /**
