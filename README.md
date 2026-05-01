@@ -16,7 +16,6 @@ This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 | v1.0.2 | 7.1.3+ | 5.5-5.8 |
 | v1.2.1 | 7.2.5+ | 6.x |
 | v1.3.0 | 7.2.5+ | 7.x |
-| v2.0.0 | 7.3+ | 8.x |
 | v3.0.1 | 8.0.2+ | 9.x |
 | v3.1.0 | 8.1+ | 10.x |
 | v3.2.1 | 8.2+ | 11.x |
@@ -72,31 +71,48 @@ Laravel package discovery is enabled by default. Manual registration remains ava
 
 Vaultic ships with [config/vaultic.php](config/vaultic.php).
 
-Minimal `.env`:
+Vaultic no longer requires package-specific `.env` entries for the default setup.
+
+By default it derives the relying party from the main Laravel application settings:
 
 ```env
-VAULTIC_CACHE_STORE=redis
-VAULTIC_CACHE_PREFIX=vaultic:challenge:
-VAULTIC_CACHE_TTL=300
+```
 
-VAULTIC_RP_ID=example.com
-VAULTIC_RP_NAME="My App"
+Package-specific customization should now live in the published backend config:
 
-VAULTIC_USER_MODEL=App\\Models\\User
-VAULTIC_USER_IDENTIFIER_COLUMN=email
-VAULTIC_DEFAULT_GUARD=web
+```php
+// config/vaultic.php
+'cache' => [
+    'store' => 'redis',
+    'prefix' => 'vaultic:challenge:',
+    'ttl' => 300,
+],
 
-VAULTIC_WEB_GUARD=web
-VAULTIC_WEB_AUTH_MIDDLEWARE=auth:web
+'auth' => [
+    'default_guard' => 'web',
+    'guards' => [
+        'web' => [
+            'guard' => 'web',
+            'provider_model' => App\Models\User::class,
+            'identifier_column' => 'email',
+        ],
+        'api' => [
+            'guard' => 'sanctum',
+            'provider_model' => App\Models\User::class,
+            'identifier_column' => 'email',
+            'token_issuer' => Hamzi\Vaultic\Services\SanctumApiTokenIssuer::class,
+        ],
+    ],
+],
 
-VAULTIC_API_GUARD=api
-VAULTIC_API_AUTH_MIDDLEWARE=auth:api
-VAULTIC_API_TOKEN_ISSUER=Hamzi\\Vaultic\\Services\\SanctumApiTokenIssuer
+'rate_limit' => [
+    'attempts' => 10,
+    'decay_seconds' => 60,
+],
 
-VAULTIC_RATE_LIMIT_ATTEMPTS=10
-VAULTIC_RATE_LIMIT_DECAY_MINUTES=1
-
-VAULTIC_FALLBACK_DRIVER=password
+'fallback' => [
+    'driver' => 'password',
+],
 ```
 
 Guard configuration lives under `auth.guards` in [config/vaultic.php](config/vaultic.php). Each guard can define:
@@ -118,6 +134,7 @@ Vaultic exposes two channels by default:
 - `POST /passkeys/register` -> `vaultic.register.store`
 - `POST /passkeys/authenticate/options` -> `vaultic.authenticate.options`
 - `POST /passkeys/authenticate` -> `vaultic.authenticate.store`
+- `DELETE /passkeys/{passkey}` -> `vaultic.passkeys.destroy`
 - `POST /api/passkeys/register/options` -> `vaultic.api.register.options`
 - `POST /api/passkeys/register` -> `vaultic.api.register.store`
 - `POST /api/passkeys/authenticate/options` -> `vaultic.api.authenticate.options`
@@ -171,11 +188,58 @@ Or use the included Sanctum-oriented issuer when your authenticatable model expo
 
 Successful API authentication responses include a `tokens` array in the JSON payload.
 
+## Blade Integration
+
+Vaultic now ships with publishable Tailwind-ready Blade primitives on top of the JSON endpoints, so you can use the package without building your own JavaScript WebAuthn bridge first.
+
+### Passkey Login Button
+
+Component usage:
+
+```blade
+<input id="email" type="email" name="email" autocomplete="username webauthn">
+
+<x-vaultic::passkey-button
+    identifier-selector="#email"
+    class="w-full"
+/>
+```
+
+Directive usage:
+
+```blade
+@passkeyButton(['identifierSelector' => '#email'])
+```
+
+Helper usage:
+
+```blade
+{{ vaultic_passkey_button(['identifierSelector' => '#email']) }}
+```
+
+### Passkey Management Panel
+
+Render the Tailwind registration form and linked-passkeys table anywhere inside your authenticated Blade views:
+
+```blade
+<x-vaultic::passkey-panel />
+```
+
+Or through the directive/helper APIs:
+
+```blade
+@passkeyPanel()
+
+{{ vaultic_passkey_panel() }}
+```
+
+Both primitives are customizable through props, route overrides, labels, and by publishing the package views with `vaultic-views`.
+
 ## Frontend Integration
 
-Vaultic only owns the backend WebAuthn flow. You can pair it with any client that can call the JSON endpoints and forward WebAuthn browser payloads.
+If you prefer a custom client, Vaultic still exposes the raw JSON endpoints for:
 
-- Blade or Livewire forms
+- Blade pages with your own markup
 - Inertia or SPA frontends
 - Native mobile or hybrid clients through API routes
 - Admin panels with separate guards and authenticatable models
