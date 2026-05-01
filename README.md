@@ -6,7 +6,7 @@ This v3.0 release is optimized for Laravel 9 projects with PHP 8 constructor-pro
 
 ## Compatibility
 
-- PHP `^8.0`
+- PHP `^8.0.2`
 - Laravel `9.x`
 
 ## Architecture
