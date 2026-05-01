@@ -5,7 +5,7 @@
     "license": "MIT",
     "keywords": [
         "laravel",
-            "vaultic",
+        "vaultic",
         "webauthn",
         "passkeys",
         "fido2",

@@ -2,20 +2,24 @@
 
 namespace Hamzi\Vaultic\Repositories;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Models\Passkey;
 
 class EloquentPasskeyRepository implements PasskeyRepository
 {
     /**
-     * @param mixed $userId
+     * @param Authenticatable $authenticatable
      * @return array<int, array<string, string>>
      */
-    public function listCredentialDescriptorsForUser($userId)
+    public function listCredentialDescriptorsForAuthenticatable(Authenticatable $authenticatable)
     {
         $descriptors = [];
 
-        $passkeys = Passkey::query()->where('user_id', $userId)->get(['credential_id']);
+        $passkeys = Passkey::query()
+            ->where('authenticatable_type', get_class($authenticatable))
+            ->where('authenticatable_id', (string) $authenticatable->getAuthIdentifier())
+            ->get(['credential_id']);
 
         foreach ($passkeys as $passkey) {
             $descriptors[] = [
@@ -46,13 +50,14 @@ class EloquentPasskeyRepository implements PasskeyRepository
     }
 
     /**
-     * @param mixed $userId
+     * @param Authenticatable $authenticatable
      * @param array<string, mixed> $attributes
      * @return Passkey
      */
-    public function createForUser($userId, array $attributes)
+    public function createForAuthenticatable(Authenticatable $authenticatable, array $attributes)
     {
-        $attributes['user_id'] = $userId;
+        $attributes['authenticatable_type'] = get_class($authenticatable);
+        $attributes['authenticatable_id'] = (string) $authenticatable->getAuthIdentifier();
 
         return Passkey::query()->create($attributes);
     }
@@ -65,7 +70,7 @@ class EloquentPasskeyRepository implements PasskeyRepository
     public function markAsUsed(Passkey $passkey, $signCount)
     {
         $passkey->sign_count = max((int) $passkey->sign_count, (int) $signCount);
-        $passkey->last_used_at = date('Y-m-d H:i:s');
+        $passkey->last_used_at = now();
         $passkey->save();
     }
 }

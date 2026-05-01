@@ -3,6 +3,7 @@
 namespace Hamzi\Vaultic\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Passkey extends Model
 {
@@ -13,7 +14,8 @@ class Passkey extends Model
     ];
 
     protected $fillable = [
-        'user_id',
+        'authenticatable_type',
+        'authenticatable_id',
         'name',
         'credential_id',
         'public_key',
@@ -28,8 +30,13 @@ class Passkey extends Model
         'last_used_at' => 'datetime',
     ];
 
-    public function user()
+    public function authenticatable(): MorphTo
     {
-        return $this->belongsTo(config('vaultic.user_model', config('auth.providers.users.model')));
+        return $this->morphTo();
+    }
+
+    public function user(): MorphTo
+    {
+        return $this->authenticatable();
     }
 }

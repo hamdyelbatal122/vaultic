@@ -13,6 +13,29 @@ return [
         'redis_serialize' => (bool) env('VAULTIC_REDIS_SERIALIZE', true),
     ],
 
+    'auth' => [
+        'default_guard' => env('VAULTIC_DEFAULT_GUARD', 'web'),
+        'session_key' => env('VAULTIC_SESSION_KEY', 'vaultic.passkeys.authenticated'),
+
+        'guards' => [
+            'web' => [
+                'guard' => env('VAULTIC_WEB_GUARD', 'web'),
+                'provider_model' => env('VAULTIC_WEB_USER_MODEL', env('VAULTIC_USER_MODEL', \App\Models\User::class)),
+                'identifier_column' => env('VAULTIC_WEB_IDENTIFIER_COLUMN', env('VAULTIC_USER_IDENTIFIER_COLUMN', 'email')),
+                'stateful' => true,
+                'remember' => false,
+            ],
+
+            'api' => [
+                'guard' => env('VAULTIC_API_GUARD', 'api'),
+                'provider_model' => env('VAULTIC_API_USER_MODEL', env('VAULTIC_USER_MODEL', \App\Models\User::class)),
+                'identifier_column' => env('VAULTIC_API_IDENTIFIER_COLUMN', env('VAULTIC_USER_IDENTIFIER_COLUMN', 'email')),
+                'stateful' => false,
+                'token_issuer' => env('VAULTIC_API_TOKEN_ISSUER', null),
+            ],
+        ],
+    ],
+
     'rate_limit' => [
         'attempts' => (int) env('VAULTIC_RATE_LIMIT_ATTEMPTS', 10),
         'decay_minutes' => (int) env('VAULTIC_RATE_LIMIT_DECAY_MINUTES', 1),
@@ -20,13 +43,28 @@ return [
     ],
 
     'routes' => [
-        'prefix' => env('VAULTIC_ROUTE_PREFIX', 'passkeys'),
-        'middleware' => ['web'],
-        'authenticated_middleware' => [env('VAULTIC_AUTH_MIDDLEWARE', 'auth')],
-        'name_prefix' => 'vaultic.',
+        'web' => [
+            'enabled' => (bool) env('VAULTIC_WEB_ROUTES_ENABLED', true),
+            'prefix' => env('VAULTIC_WEB_ROUTE_PREFIX', 'passkeys'),
+            'middleware' => ['web'],
+            'authenticated_middleware' => [env('VAULTIC_WEB_AUTH_MIDDLEWARE', 'auth:web')],
+            'name_prefix' => 'vaultic.',
+            'guard' => env('VAULTIC_WEB_GUARD', 'web'),
+            'stateful' => true,
+        ],
+
+        'api' => [
+            'enabled' => (bool) env('VAULTIC_API_ROUTES_ENABLED', true),
+            'prefix' => env('VAULTIC_API_ROUTE_PREFIX', 'api/passkeys'),
+            'middleware' => ['api'],
+            'authenticated_middleware' => [env('VAULTIC_API_AUTH_MIDDLEWARE', 'auth:api')],
+            'name_prefix' => 'vaultic.api.',
+            'guard' => env('VAULTIC_API_GUARD', 'api'),
+            'stateful' => false,
+        ],
     ],
 
-    'user_model' => env('VAULTIC_USER_MODEL', \App\User::class),
+    'user_model' => env('VAULTIC_USER_MODEL', \App\Models\User::class),
     'user_identifier_column' => env('VAULTIC_USER_IDENTIFIER_COLUMN', 'email'),
     'redirect_after_login' => env('VAULTIC_REDIRECT_AFTER_LOGIN', '/dashboard'),
     'challenge_timeout_ms' => (int) env('VAULTIC_CHALLENGE_TIMEOUT_MS', 60000),

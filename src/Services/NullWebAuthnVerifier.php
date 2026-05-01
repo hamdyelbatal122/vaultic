@@ -11,15 +11,21 @@ class NullWebAuthnVerifier implements WebAuthnVerifier
 {
     public function verifyRegistration(array $payload, string $challenge, string $rpId): RegistrationResult
     {
-        throw new RuntimeException(
-            'No WebAuthn verifier configured. Bind '.WebAuthnVerifier::class.' to your FIDO2 implementation.'
-        );
+        throw $this->missingVerifierException();
     }
 
     public function verifyAssertion(array $payload, string $challenge, string $rpId): AssertionResult
     {
-        throw new RuntimeException(
-            'No WebAuthn verifier configured. Bind '.WebAuthnVerifier::class.' to your FIDO2 implementation.'
+        throw $this->missingVerifierException();
+    }
+
+    /**
+     * @return RuntimeException
+     */
+    private function missingVerifierException()
+    {
+        return new RuntimeException(
+            'No WebAuthn verifier configured. Bind '.WebAuthnVerifier::class.' to your FIDO2 implementation in a service provider before calling Vaultic endpoints.'
         );
     }
 }
