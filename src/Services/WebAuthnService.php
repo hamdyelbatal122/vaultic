@@ -79,10 +79,12 @@ class WebAuthnService implements WebAuthnServiceContract
             'attestation' => 'none',
             'authenticatorSelection' => array_filter([
                 'userVerification' => config('vaultic.user_verification', 'preferred'),
+                'residentKey' => config('vaultic.resident_key', 'required'),
                 'authenticatorAttachment' => config('vaultic.authenticator_attachment'),
             ], function ($value) {
                 return $value !== null;
             }),
+            'hints' => array_values(array_filter((array) config('vaultic.authenticator_hints', ['client-device', 'hybrid']))),
             'excludeCredentials' => $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),
             'vaultic' => [
                 'guard' => (string) $guardConfig['guard'],
@@ -171,6 +173,7 @@ class WebAuthnService implements WebAuthnServiceContract
             'rpId' => config('vaultic.rp.id'),
             'timeout' => (int) config('vaultic.challenge_timeout_ms', 60000),
             'userVerification' => config('vaultic.user_verification', 'preferred'),
+            'hints' => array_values(array_filter((array) config('vaultic.authenticator_hints', ['client-device', 'hybrid']))),
             'allowCredentials' => $user === null
                 ? []
                 : $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),

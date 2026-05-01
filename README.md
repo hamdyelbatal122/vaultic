@@ -60,13 +60,11 @@ php artisan migrate
 
 Laravel package discovery is enabled by default. Manual registration remains available when needed:
 
-
-
 ## Configuration
 
 Vaultic ships with [config/vaultic.php](config/vaultic.php).
 
-'Vaultic no longer requires package-specific `.env` entries for the default setup.
+Vaultic no longer requires package-specific `.env` entries for the default setup.
 
 By default, Vaultic derives the relying party from your main Laravel application settings (APP_URL, APP_NAME) and uses the default cache store configured in your app:
 
@@ -99,6 +97,10 @@ By default, Vaultic derives the relying party from your main Laravel application
     'attempts' => 10,
     'decay_seconds' => 60,
 ],
+
+'resident_key' => 'required',
+'authenticator_hints' => ['client-device', 'hybrid'],
+
 'fallback' => [
     'driver' => 'password',
 ],
@@ -111,6 +113,11 @@ Guard configuration lives under `auth.guards` in [config/vaultic.php](config/vau
 - `stateful`
 - `remember`
 - `token_issuer`
+
+For modern passkey UX, Vaultic enables discoverable credentials by default and can hint browsers toward:
+
+- `client-device`: Face ID, Touch ID, Windows Hello, built-in biometrics
+- `hybrid`: phone-assisted sign-in flows that typically rely on proximity transports such as Bluetooth
 
 ## Routes
 
@@ -183,27 +190,55 @@ Vaultic now ships with publishable Tailwind-ready Blade primitives on top of the
 
 ### Passkey Login Button
 
+The default button is compact, Tailwind-based, and intentionally small so you can place it inline in forms, toolbars, modals, or profile screens.
+
+Minimal discoverable login button:
+
+```blade
+<x-vaultic::passkey-button size="sm" />
+```
+
+Full-width button inside a card or auth form:
+
+```blade
+<x-vaultic::passkey-button
+    size="md"
+    :full-width="true"
+    class="justify-center"
+/>
+```
+
 Component usage:
+
+```blade
+<x-vaultic::passkey-button
+    size="sm"
+    label="Continue with passkey"
+/>
+```
+
+Optional account-scoped login when you still want an identifier field:
 
 ```blade
 <input id="email" type="email" name="email" autocomplete="username webauthn">
 
 <x-vaultic::passkey-button
     identifier-selector="#email"
-    class="w-full"
+    size="sm"
+    label="Sign in for this account"
 />
 ```
 
 Directive usage:
 
 ```blade
-@passkeyButton(['identifierSelector' => '#email'])
+@passkeyButton(['size' => 'sm', 'fullWidth' => false])
 ```
 
 Helper usage:
 
 ```blade
-{{ vaultic_passkey_button(['identifierSelector' => '#email']) }}
+{{ vaultic_passkey_button(['size' => 'sm']) }}
 ```
 
 ### Passkey Management Panel
@@ -214,6 +249,13 @@ Render the Tailwind registration form and linked-passkeys table anywhere inside 
 <x-vaultic::passkey-panel />
 ```
 
+The management panel stays fully Tailwind-based and includes:
+
+- compact registration CTA
+- discoverable passkey copy
+- linked authenticators table
+- device deletion actions
+
 Or through the directive/helper APIs:
 
 ```blade
@@ -222,7 +264,15 @@ Or through the directive/helper APIs:
 {{ vaultic_passkey_panel() }}
 ```
 
-Both primitives are customizable through props, route overrides, labels, and by publishing the package views with `vaultic-views`.
+Both primitives are customizable through props, route overrides, labels, sizes, width control, and by publishing the package views with `vaultic-views`.
+
+Supported authenticator experiences depend on the browser and device, but Vaultic is configured to work well with:
+
+- Face ID
+- Touch ID
+- Windows Hello
+- Nearby phones in hybrid flows
+- USB, NFC, and BLE security keys
 
 ## Frontend Integration
 
