@@ -30,6 +30,9 @@
         "phpunit/phpunit": "^11.0"
     },
     "autoload": {
+        "files": [
+            "src/helpers.php"
+        ],
         "psr-4": {
             "Hamzi\\Vaultic\\": "src/"
         }
