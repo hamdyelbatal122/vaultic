@@ -1,13 +1,13 @@
-# Vaultic v3.3
+# Vaultic v4.0
 
 Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with Redis-backed challenge storage and fallback authentication flows.
 
-This v3.3 release is optimized for Laravel 12 projects.
+This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runtimes.
 
 ## Compatibility
 
-- PHP `^8.1`
-- Laravel `12.x`
+- PHP `^8.3`
+- Laravel `13.x`
 
 ## Architecture
 
@@ -25,7 +25,7 @@ Flow:
 ## Installation
 
 ```bash
-composer require hamzi/vaultic:^3.3
+composer require hamzi/vaultic:^4.0
 ```
 
 Publish package assets:

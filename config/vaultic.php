@@ -10,6 +10,7 @@ return [
         'store' => env('VAULTIC_CACHE_STORE', 'redis'),
         'prefix' => env('VAULTIC_CACHE_PREFIX', 'vaultic:challenge:'),
         'ttl' => (int) env('VAULTIC_CACHE_TTL', 300),
+        'redis_serialize' => (bool) env('VAULTIC_REDIS_SERIALIZE', true),
     ],
 
     'rate_limit' => [

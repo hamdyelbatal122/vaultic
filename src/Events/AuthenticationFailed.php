@@ -13,9 +13,9 @@ class AuthenticationFailed
     use SerializesModels;
 
     public function __construct(
-        public string $reason,
-        public ?string $credentialId = null,
-        public ?string $userIdentifier = null,
+        public readonly string $reason,
+        public readonly ?string $credentialId = null,
+        public readonly ?string $userIdentifier = null,
     ) {
     }
 }
