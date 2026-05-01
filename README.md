@@ -1,13 +1,13 @@
-# Vaultic v1.3
+# Vaultic v2.0
 
 Vaultic is a Laravel package for WebAuthn/Passkeys (FIDO2) with Redis-backed challenge storage and fallback authentication flows.
 
-This v1.3 release is optimized for Laravel 7 projects.
+This v2.0 release is optimized for Laravel 8 projects with named rate limiter support.
 
 ## Compatibility
 
-- PHP `^7.2.5`
-- Laravel `7.x`
+- PHP `^7.3`
+- Laravel `8.x`
 
 ## Architecture
 
@@ -25,7 +25,7 @@ Flow:
 ## Installation
 
 ```bash
-composer require hamzi/vaultic:^1.3
+composer require hamzi/vaultic:^2.0
 ```
 
 Publish package assets:
@@ -78,7 +78,7 @@ Default route prefix is `/passkeys` with name prefix `vaultic.`.
 - `POST /passkeys/authenticate/options` -> `vaultic.authenticate.options`
 - `POST /passkeys/authenticate` -> `vaultic.authenticate.store`
 
-Rate limiting uses legacy middleware syntax: `throttle:attempts,decayMinutes`.
+Rate limiting uses named limiter middleware: `throttle:vaultic.passkeys`.
 
 ## WebAuthn Verifier Contract
 

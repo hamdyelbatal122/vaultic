@@ -1,6 +1,6 @@
 {
     "name": "hamzi/vaultic",
-    "description": "Vaultic v1.3 - Laravel 7 WebAuthn/Passkeys authentication package.",
+    "description": "Vaultic v2.0 - Laravel 8 WebAuthn/Passkeys authentication package.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -12,22 +12,22 @@
         "authentication"
     ],
     "require": {
-        "php": "^7.2.5",
-        "illuminate/contracts": "^7.0",
-        "illuminate/support": "^7.0",
-        "illuminate/routing": "^7.0",
-        "illuminate/cache": "^7.0",
-        "illuminate/auth": "^7.0",
-        "illuminate/database": "^7.0",
-        "illuminate/events": "^7.0",
-        "illuminate/view": "^7.0",
-        "illuminate/session": "^7.0",
-        "illuminate/http": "^7.0",
-        "illuminate/validation": "^7.0"
+        "php": "^7.3",
+        "illuminate/contracts": "^8.0",
+        "illuminate/support": "^8.0",
+        "illuminate/routing": "^8.0",
+        "illuminate/cache": "^8.0",
+        "illuminate/auth": "^8.0",
+        "illuminate/database": "^8.0",
+        "illuminate/events": "^8.0",
+        "illuminate/view": "^8.0",
+        "illuminate/session": "^8.0",
+        "illuminate/http": "^8.0",
+        "illuminate/validation": "^8.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^5.0",
-        "phpunit/phpunit": "^8.5"
+        "orchestra/testbench": "^6.0",
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {

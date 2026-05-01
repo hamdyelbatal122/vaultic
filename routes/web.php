@@ -3,9 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Hamzi\Vaultic\Http\Controllers\WebAuthnController;
 
-$rateLimitAttempts = (int) config('vaultic.rate_limit.attempts', 10);
-$rateLimitDecayMinutes = (int) config('vaultic.rate_limit.decay_minutes', 1);
-$throttleMiddleware = sprintf('throttle:%d,%d', $rateLimitAttempts, $rateLimitDecayMinutes);
+$throttleMiddleware = 'throttle:vaultic.passkeys';
 
 Route::middleware(config('vaultic.routes.middleware', ['web']))
     ->prefix(config('vaultic.routes.prefix', 'passkeys'))
