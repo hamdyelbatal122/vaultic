@@ -12,7 +12,7 @@
         "authentication"
     ],
     "require": {
-        "php": "^8.0",
+        "php": "^8.0.2",
         "illuminate/contracts": "^9.0",
         "illuminate/support": "^9.0",
         "illuminate/routing": "^9.0",
