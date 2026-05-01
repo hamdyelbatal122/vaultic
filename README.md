@@ -47,7 +47,7 @@ Flow:
 ## Installation
 
 ```bash
-composer require hamzi/vaultic:^4.0
+composer require hamzi/vaultic
 ```
 
 Publish package assets:
