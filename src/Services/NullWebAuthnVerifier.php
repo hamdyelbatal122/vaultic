@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Hamzi\Vaultic\Services;
 
 use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
@@ -9,7 +7,7 @@ use Hamzi\Vaultic\Data\AssertionResult;
 use Hamzi\Vaultic\Data\RegistrationResult;
 use RuntimeException;
 
-final class NullWebAuthnVerifier implements WebAuthnVerifier
+class NullWebAuthnVerifier implements WebAuthnVerifier
 {
     public function verifyRegistration(array $payload, string $challenge, string $rpId): RegistrationResult
     {

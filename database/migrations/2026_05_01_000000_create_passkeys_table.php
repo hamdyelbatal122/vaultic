@@ -1,24 +1,27 @@
 <?php
 
-declare(strict_types=1);
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreatePasskeysTable extends Migration
 {
-    public function up(): void
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
     {
-        Schema::create('passkeys', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+        Schema::create('passkeys', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedInteger('user_id');
             $table->string('name')->default('Unnamed device');
             $table->string('credential_id')->unique();
             $table->longText('public_key');
-            $table->unsignedBigInteger('sign_count')->default(0);
+            $table->unsignedInteger('sign_count')->default(0);
             $table->string('transports')->nullable();
-            $table->uuid('aaguid')->nullable();
+            $table->string('aaguid', 36)->nullable();
             $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
 
@@ -26,8 +29,13 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
     {
         Schema::dropIfExists('passkeys');
     }
-};
+}

@@ -1,6 +1,6 @@
 {
     "name": "hamzi/vaultic",
-    "description": "Production-ready Laravel package for WebAuthn/Passkeys authentication with Redis challenge storage, fallback flows, and extensible events.",
+    "description": "Laravel package for WebAuthn/Passkeys authentication with Redis challenge storage.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -12,23 +12,22 @@
         "authentication"
     ],
     "require": {
-        "php": "^8.2",
-        "illuminate/contracts": "^11.0|^12.0",
-        "illuminate/support": "^11.0|^12.0",
-        "illuminate/routing": "^11.0|^12.0",
-        "illuminate/cache": "^11.0|^12.0",
-        "illuminate/auth": "^11.0|^12.0",
-        "illuminate/database": "^11.0|^12.0",
-        "illuminate/events": "^11.0|^12.0",
-        "illuminate/view": "^11.0|^12.0",
-        "illuminate/session": "^11.0|^12.0",
-        "illuminate/http": "^11.0|^12.0",
-        "illuminate/validation": "^11.0|^12.0"
+        "php": "^7.1",
+        "illuminate/contracts": "^5.5",
+        "illuminate/support": "^5.5",
+        "illuminate/routing": "^5.5",
+        "illuminate/cache": "^5.5",
+        "illuminate/auth": "^5.5",
+        "illuminate/database": "^5.5",
+        "illuminate/events": "^5.5",
+        "illuminate/view": "^5.5",
+        "illuminate/session": "^5.5",
+        "illuminate/http": "^5.5",
+        "illuminate/validation": "^5.5"
     },
     "require-dev": {
-        "orchestra/testbench": "^9.0|^10.0",
-        "pestphp/pest": "^3.0",
-        "phpunit/phpunit": "^11.0"
+        "orchestra/testbench": "^3.5",
+        "phpunit/phpunit": "^7.5"
     },
     "autoload": {
         "psr-4": {
@@ -48,12 +47,7 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest"
-    },
-    "config": {
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+        "test": "vendor/bin/phpunit"
     },
     "minimum-stability": "stable",
     "prefer-stable": true

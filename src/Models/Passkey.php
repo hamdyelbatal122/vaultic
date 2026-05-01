@@ -1,13 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Hamzi\Vaultic\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-final class Passkey extends Model
+class Passkey extends Model
 {
     protected $table = 'passkeys';
 
@@ -31,7 +28,7 @@ final class Passkey extends Model
         'last_used_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(config('vaultic.user_model', config('auth.providers.users.model')));
     }
