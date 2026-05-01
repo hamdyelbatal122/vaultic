@@ -6,23 +6,11 @@
 
         <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-950">Sign in with your passkey</h2>
         <p class="mt-2 max-w-lg text-sm leading-6 text-slate-600">
-            Use Face ID, Touch ID, Windows Hello, your phone, or a hardware security key to complete sign-in without a password.
+            Use Face ID, Touch ID, Windows Hello, your phone, or a hardware security key. No email input is required in the default flow.
         </p>
 
-        <div class="mt-6 space-y-3">
-            <label class="block text-sm font-medium text-slate-700" for="vaultic-login-identifier">Account identifier</label>
-            <input
-                id="vaultic-login-identifier"
-                type="text"
-                name="identifier"
-                autocomplete="username webauthn"
-                class="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-200"
-                placeholder="you@example.com"
-            />
-        </div>
-
         <div class="mt-6">
-            <x-vaultic::passkey-button identifier-selector="#vaultic-login-identifier" class="w-full" />
+            <x-vaultic::passkey-button class="w-full" label="Continue with passkey" />
         </div>
     </div>
 </div>

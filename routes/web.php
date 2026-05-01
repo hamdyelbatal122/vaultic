@@ -3,7 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use Hamzi\Vaultic\Http\Controllers\WebAuthnController;
 
-$throttleMiddleware = 'throttle:vaultic.passkeys';
+$attempts = (int) config('vaultic.rate_limit.attempts', 10);
+$decaySeconds = (int) config(
+    'vaultic.rate_limit.decay_seconds',
+    (int) config('vaultic.rate_limit.decay_minutes', 1) * 60
+);
+$decayMinutes = max(1, (int) ceil($decaySeconds / 60));
+$throttleMiddleware = sprintf('throttle:%d,%d', $attempts, $decayMinutes);
 
 $routeChannels = [
     'web' => (array) config('vaultic.routes.web', []),

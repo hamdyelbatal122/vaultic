@@ -69,13 +69,13 @@ class WebAuthnController extends Controller
     {
         list($guardName) = $this->resolveChannelContext($request);
         $validated = $request->validate([
-            'identifier' => ['required', 'string', 'max:255'],
+            'identifier' => ['nullable', 'string', 'max:255'],
             'guard' => ['nullable', 'string', 'max:50'],
         ]);
 
         return response()->json(
             $this->service->buildAuthenticationOptions(
-                (string) $validated['identifier'],
+                isset($validated['identifier']) ? (string) $validated['identifier'] : null,
                 isset($validated['guard']) ? (string) $validated['guard'] : $guardName
             )
         );
@@ -89,12 +89,17 @@ class WebAuthnController extends Controller
     {
         list($guardName, $stateful) = $this->resolveChannelContext($request);
         $validated = $request->validate([
-            'identifier' => ['required', 'string', 'max:255'],
+            'identifier' => ['nullable', 'string', 'max:255'],
             'guard' => ['nullable', 'string', 'max:50'],
         ]);
 
         $resolvedGuard = isset($validated['guard']) ? (string) $validated['guard'] : $guardName;
-        $result = $this->service->authenticate((string) $validated['identifier'], $request->all(), $resolvedGuard, $stateful);
+        $result = $this->service->authenticate(
+            isset($validated['identifier']) ? (string) $validated['identifier'] : null,
+            $request->all(),
+            $resolvedGuard,
+            $stateful
+        );
 
         if (isset($result['session']) && is_array($result['session'])) {
             foreach ($result['session'] as $key => $value) {

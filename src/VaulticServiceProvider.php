@@ -3,6 +3,7 @@
 namespace Hamzi\Vaultic;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
@@ -76,7 +77,11 @@ class VaulticServiceProvider extends ServiceProvider
 
     private function registerRateLimiter()
     {
-        if (!class_exists(RateLimiter::class) || !method_exists(RateLimiter::class, 'for')) {
+        $limiter = $this->app->bound('cache.rateLimiter')
+            ? $this->app->make('cache.rateLimiter')
+            : null;
+
+        if (! $limiter instanceof CacheRateLimiter || ! method_exists($limiter, 'for')) {
             return;
         }
 

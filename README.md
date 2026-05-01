@@ -129,7 +129,7 @@ Vaultic exposes two channels by default:
 - `POST /api/passkeys/authenticate/options` -> `vaultic.api.authenticate.options`
 - `POST /api/passkeys/authenticate` -> `vaultic.api.authenticate.store`
 
-Rate limiting uses named limiter middleware: `throttle:vaultic.passkeys`.
+Rate limiting is applied using your Vaultic config values (`rate_limit.attempts`, `rate_limit.decay_seconds`) through Laravel throttle middleware.
 
 All endpoints return JSON, so the package is not tied to any UI stack.
 

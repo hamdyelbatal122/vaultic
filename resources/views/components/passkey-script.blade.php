@@ -216,12 +216,12 @@
 
                 const identifier = (resolveIdentifier(button) || '').trim();
 
-                if (!identifier) {
-                    throw new Error('Enter your account identifier before using a passkey.');
-                }
-
                 const guard = button.dataset.guard || null;
-                const optionsPayload = { identifier };
+                const optionsPayload = {};
+
+                if (identifier) {
+                    optionsPayload.identifier = identifier;
+                }
 
                 if (guard) {
                     optionsPayload.guard = guard;
@@ -237,8 +237,17 @@
 
                 const submitPayload = {
                     ...credentialToJson(credential),
-                    identifier,
                 };
+
+                const challengeKey = options?.vaultic?.challenge_key || options?.challenge_key || null;
+
+                if (identifier) {
+                    submitPayload.identifier = identifier;
+                }
+
+                if (challengeKey) {
+                    submitPayload.challenge_key = challengeKey;
+                }
 
                 if (guard) {
                     submitPayload.guard = guard;
