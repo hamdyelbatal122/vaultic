@@ -6,7 +6,7 @@ This v3.2 release is optimized for Laravel 11 projects.
 
 ## Compatibility
 
-- PHP `^8.1`
+- PHP `^8.2`
 - Laravel `11.x`
 
 ## Architecture
