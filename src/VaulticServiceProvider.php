@@ -92,13 +92,18 @@ class VaulticServiceProvider extends ServiceProvider
                 (int) config('vaultic.rate_limit.decay_minutes', 1) * 60
             );
             $decayMinutes = max(1, (int) ceil($decaySeconds / 60));
+            $rateLimitKey = hash('sha256', implode('|', array_filter([
+                (string) optional($request->route())->getName(),
+                (string) $request->ip(),
+                (string) $request->input('identifier', ''),
+                (string) $request->input('id', ''),
+                (string) $request->input('challenge_key', ''),
+            ], function ($value) {
+                return $value !== '';
+            })));
 
             return Limit::perMinutes($decayMinutes, $attempts)
-                ->by(implode('|', [
-                    (string) optional($request->route())->getName(),
-                    $request->ip(),
-                    (string) $request->input('identifier', ''),
-                ]));
+                ->by($rateLimitKey);
         });
     }
 

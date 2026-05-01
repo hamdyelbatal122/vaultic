@@ -1,9 +1,9 @@
 @props([
     'guard' => null,
     'title' => 'Manage Passkeys',
-    'description' => 'Register a new passkey, review your current authenticators, and remove devices you no longer trust.',
+    'description' => 'Register a new passkey, review your current authenticators, and remove devices you no longer trust from one clean security surface.',
     'registerTitle' => 'Register a new authenticator',
-    'registerDescription' => 'Use Face ID, Touch ID, Windows Hello, your phone, or a FIDO2 security key.',
+    'registerDescription' => 'Use Face ID, Touch ID, Windows Hello, a nearby phone through hybrid transport, or a FIDO2 security key.',
     'registerLabel' => 'Add this device as a passkey',
     'registerPlaceholder' => 'MacBook Pro, iPhone, Security Key',
     'emptyTitle' => 'No passkeys registered yet',
@@ -59,6 +59,13 @@
                         </span>
                     </div>
 
+                    <div class="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                        <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Discoverable passkeys</span>
+                        <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Biometrics</span>
+                        <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Phone sign-in</span>
+                        <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Security keys</span>
+                    </div>
+
                     <div class="mt-5 space-y-3">
                         <label class="block text-sm font-medium text-slate-700" for="{{ $nameFieldId }}">Device label</label>
                         <input
@@ -76,7 +83,7 @@
                             name-selector="#{{ $nameFieldId }}"
                             :guard="$resolvedGuard"
                             :label="$registerLabel"
-                            class="w-full"
+                            :full-width="true"
                             reload-on-success="true"
                         />
                     </div>

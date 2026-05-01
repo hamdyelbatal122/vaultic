@@ -70,7 +70,9 @@ return [
     'challenge_timeout_ms' => 60000,
     'device_name_max_length' => 100,
     'user_verification' => 'preferred',
+    'resident_key' => 'required',
     'authenticator_attachment' => null,
+    'authenticator_hints' => ['client-device', 'hybrid'],
 
     'fallback' => [
         'driver' => 'password', // password|magic_link

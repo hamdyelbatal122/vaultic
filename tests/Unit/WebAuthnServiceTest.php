@@ -73,6 +73,8 @@ class WebAuthnServiceTest extends TestCase
             'stateful' => true,
         ]);
         config()->set('vaultic.rp.id', 'example.test');
+        config()->set('vaultic.resident_key', 'required');
+        config()->set('vaultic.authenticator_hints', ['client-device', 'hybrid']);
     }
 
     public function test_it_authenticates_statefully_for_a_session_guard()
@@ -179,6 +181,26 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame('admin', $options['vaultic']['guard']);
         $this->assertCount(1, $options['allowCredentials']);
         $this->assertSame('cred-admin', $options['allowCredentials'][0]['id']);
+    }
+
+    public function test_it_exposes_modern_webauthn_registration_preferences()
+    {
+        $user = TestUser::query()->create([
+            'email' => 'modern@example.com',
+            'name' => 'Modern User',
+        ]);
+
+        $service = $this->makeService(new class implements ApiTokenIssuer {
+            public function issueToken($authenticatable, $guardName, array $payload = [])
+            {
+                return [];
+            }
+        });
+
+        $options = $service->buildRegistrationOptions($user, 'web');
+
+        $this->assertSame('required', $options['authenticatorSelection']['residentKey']);
+        $this->assertSame(['client-device', 'hybrid'], $options['hints']);
     }
 
     public function test_it_authenticates_without_identifier_using_discoverable_passkey()
