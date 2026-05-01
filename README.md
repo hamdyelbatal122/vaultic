@@ -6,7 +6,7 @@ This v3.3 release is optimized for Laravel 12 projects.
 
 ## Compatibility
 
-- PHP `^8.1`
+- PHP `^8.2`
 - Laravel `12.x`
 
 ## Architecture
