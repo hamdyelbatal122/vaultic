@@ -11,7 +11,7 @@ This v4.0 release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 
 ## Architecture
 
-Vaultic v1.0 uses a layered architecture to keep framework glue and business logic separated:
+Vaultic uses a layered architecture to keep framework glue and business logic separated:
 
 - HTTP Layer: controllers + middleware
 - Service Layer: WebAuthn orchestration and fallback decisions
@@ -37,7 +37,7 @@ php artisan vendor:publish --provider="Hamzi\\Vaultic\\VaulticServiceProvider" -
 php artisan migrate
 ```
 
-For Laravel 5.5 package discovery is supported. For older installation preferences, manual registration is also valid:
+Laravel package discovery is enabled by default. Manual registration remains available when needed:
 
 ```php
 // config/app.php
@@ -60,7 +60,7 @@ VAULTIC_CACHE_TTL=300
 VAULTIC_RP_ID=example.com
 VAULTIC_RP_NAME="My App"
 
-VAULTIC_USER_MODEL=App\\User
+VAULTIC_USER_MODEL=App\\Models\\User
 VAULTIC_USER_IDENTIFIER_COLUMN=email
 
 VAULTIC_RATE_LIMIT_ATTEMPTS=10
@@ -119,6 +119,21 @@ Includes:
 
 - unit tests for challenge issuance/pull behavior
 - feature tests for route registration and middleware behavior
+
+## Professional Releases
+
+Vaultic includes an automated release publisher that generates professional GitHub release titles and descriptions for all tags.
+
+```bash
+bash scripts/publish_releases.sh
+```
+
+Authentication:
+
+- Option 1: `gh auth login`
+- Option 2: `export GITHUB_TOKEN=<token_with_repo_scope>`
+
+Recommended release matrix is documented in [docs/releases/RELEASES_STATUS.md](docs/releases/RELEASES_STATUS.md).
 
 ## License
 
