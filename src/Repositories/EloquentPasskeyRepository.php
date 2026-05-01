@@ -3,6 +3,7 @@
 namespace Hamzi\Vaultic\Repositories;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Collection;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Models\Passkey;
 
@@ -60,6 +61,37 @@ class EloquentPasskeyRepository implements PasskeyRepository
         $attributes['authenticatable_id'] = (string) $authenticatable->getAuthIdentifier();
 
         return Passkey::query()->create($attributes);
+    }
+
+    /**
+     * @param Authenticatable $authenticatable
+     * @return Collection<int, Passkey>
+     */
+    public function listForAuthenticatable(Authenticatable $authenticatable): Collection
+    {
+        return Passkey::query()
+            ->where('authenticatable_type', get_class($authenticatable))
+            ->where('authenticatable_id', (string) $authenticatable->getAuthIdentifier())
+            ->orderByDesc('last_used_at')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * @param Authenticatable $authenticatable
+     * @param Passkey $passkey
+     * @return bool
+     */
+    public function deleteForAuthenticatable(Authenticatable $authenticatable, Passkey $passkey): bool
+    {
+        if (
+            $passkey->authenticatable_type !== get_class($authenticatable)
+            || (string) $passkey->authenticatable_id !== (string) $authenticatable->getAuthIdentifier()
+        ) {
+            return false;
+        }
+
+        return (bool) $passkey->delete();
     }
 
     /**

@@ -2,6 +2,9 @@
 
 namespace Hamzi\Vaultic\Contracts;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Hamzi\Vaultic\Models\Passkey;
+
 interface WebAuthnService
 {
     /**
@@ -29,4 +32,11 @@ interface WebAuthnService
      * @return array<string, mixed>
      */
     public function authenticate($identifier, array $payload, $guardName = null, $stateful = null);
+
+    /**
+     * @param Authenticatable $user
+     * @param Passkey $passkey
+     * @return bool
+     */
+    public function deletePasskey(Authenticatable $user, Passkey $passkey);
 }
