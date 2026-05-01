@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
@@ -11,19 +13,9 @@ class PasskeyRegistered
     use Dispatchable;
     use SerializesModels;
 
-    /** @var mixed */
-    public $user;
-
-    /** @var Passkey */
-    public $passkey;
-
-    /**
-     * @param mixed $user
-     * @param Passkey $passkey
-     */
-    public function __construct($user, Passkey $passkey)
-    {
-        $this->user = $user;
-        $this->passkey = $passkey;
+    public function __construct(
+        public mixed $user,
+        public Passkey $passkey,
+    ) {
     }
 }

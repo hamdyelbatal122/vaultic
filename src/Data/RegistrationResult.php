@@ -1,76 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Data;
 
 class RegistrationResult
 {
-    /** @var string */
-    private $credentialId;
-
-    /** @var string */
-    private $publicKey;
-
-    /** @var int */
-    private $signCount;
-
-    /** @var string */
-    private $transports;
-
-    /** @var string */
-    private $aaguid;
-
-    /**
-     * @param string $credentialId
-     * @param string $publicKey
-     * @param int $signCount
-     * @param string $transports
-     * @param string $aaguid
-     */
-    public function __construct($credentialId, $publicKey, $signCount, $transports = '', $aaguid = '')
-    {
-        $this->credentialId = $credentialId;
-        $this->publicKey = $publicKey;
-        $this->signCount = $signCount;
-        $this->transports = $transports;
-        $this->aaguid = $aaguid;
+    public function __construct(
+        private string $credentialId,
+        private string $publicKey,
+        private int $signCount,
+        private string $transports = '',
+        private string $aaguid = '',
+    ) {
     }
 
-    /**
-     * @return string
-     */
-    public function getCredentialId()
+    public function getCredentialId(): string
     {
         return $this->credentialId;
     }
 
-    /**
-     * @return string
-     */
-    public function getPublicKey()
+    public function getPublicKey(): string
     {
         return $this->publicKey;
     }
 
-    /**
-     * @return int
-     */
-    public function getSignCount()
+    public function getSignCount(): int
     {
         return $this->signCount;
     }
 
-    /**
-     * @return string
-     */
-    public function getTransports()
+    public function getTransports(): string
     {
         return $this->transports;
     }
 
-    /**
-     * @return string
-     */
-    public function getAaguid()
+    public function getAaguid(): string
     {
         return $this->aaguid;
     }
