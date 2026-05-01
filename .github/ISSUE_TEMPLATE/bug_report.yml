@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a reproducible bug
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide enough detail to reproduce the issue.
+  - type: input
+    id: vaultic_tag
+    attributes:
+      label: Vaultic tag
+      placeholder: e.g. v3.2.1
+    validations:
+      required: true
+  - type: input
+    id: laravel_version
+    attributes:
+      label: Laravel version
+      placeholder: e.g. 11.10.0
+    validations:
+      required: true
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+      placeholder: e.g. 8.2.12
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      placeholder: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
