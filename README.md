@@ -9,7 +9,7 @@ This v4.X release is optimized for Laravel 13 projects and modern PHP 8.3+ runti
 - PHP `^8.3`
 - Laravel `13.x`
 
-## Version Matrix
+## Version Matrix 
 
 | Vaultic Tag | PHP    | Laravel |
 |-------------|--------|---------|
