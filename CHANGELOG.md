@@ -88,3 +88,4 @@ All notable changes to this project will be documented in this file.
 - [2024-12-25]: chore: update security audit check docs
 - [2024-12-27]: refactor: optimize crypt block encryption parameters
 - [2024-12-29]: docs: document vault decryption guidelines
+- [2026-05-20]: feat: add hardware security key (FIDO2) support
