@@ -90,3 +90,4 @@ All notable changes to this project will be documented in this file.
 - [2024-12-29]: docs: document vault decryption guidelines
 - [2026-05-20]: feat: add hardware security key (FIDO2) support
 - [2026-05-20]: refactor: upgrade AES-GCM key derivation to Argon2id
+- [2026-05-20]: docs: document vault export and backup procedures
