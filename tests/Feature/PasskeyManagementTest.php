@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Tests\Feature;
 
 use Illuminate\Support\Facades\Blade;
@@ -38,7 +40,7 @@ class PasskeyManagementTest extends TestCase
         });
     }
 
-    public function test_it_renders_the_passkey_button_helper()
+    public function test_it_renders_the_passkey_button_helper(): void
     {
         $html = Blade::render('{{ vaultic_passkey_button(["identifierSelector" => "#email"]) }}');
 
@@ -47,7 +49,7 @@ class PasskeyManagementTest extends TestCase
         $this->assertStringContainsString('#email', $html);
     }
 
-    public function test_it_deletes_an_owned_passkey()
+    public function test_it_deletes_an_owned_passkey(): void
     {
         $user = TestUser::query()->create([
             'email' => 'user@example.com',
@@ -70,7 +72,7 @@ class PasskeyManagementTest extends TestCase
         $this->assertDatabaseMissing('passkeys', ['credential_id' => 'cred-delete']);
     }
 
-    public function test_it_renders_last_used_ip_in_the_management_panel()
+    public function test_it_renders_last_used_ip_in_the_management_panel(): void
     {
         $user = TestUser::query()->create([
             'email' => 'user@example.com',

@@ -1,43 +1,79 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Contracts;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Hamzi\Vaultic\Models\Passkey;
 
+/**
+ * Contract for the WebAuthn orchestration service.
+ */
 interface WebAuthnService
 {
     /**
-     * @param mixed $user
+     * Build WebAuthn registration options for the given user.
+     *
+     * @param  Authenticatable       $user
+     * @param  string|null           $guardName
      * @return array<string, mixed>
      */
-    public function buildRegistrationOptions($user, $guardName = null);
+    public function buildRegistrationOptions(Authenticatable $user, ?string $guardName = null): array;
 
     /**
-     * @param mixed $user
-     * @param array<string, mixed> $payload
+     * Verify and persist a new passkey registration.
+     *
+     * @param  Authenticatable       $user
+     * @param  array<string, mixed>  $payload
+     * @param  string|null           $guardName
      * @return array<string, mixed>
      */
-    public function registerPasskey($user, array $payload, $guardName = null);
+    public function registerPasskey(Authenticatable $user, array $payload, ?string $guardName = null): array;
 
     /**
-     * @param string|null $identifier
+     * Build WebAuthn authentication options.
+     *
+     * @param  string|null           $identifier
+     * @param  string|null           $guardName
      * @return array<string, mixed>
      */
-    public function buildAuthenticationOptions($identifier, $guardName = null);
+    public function buildAuthenticationOptions(?string $identifier, ?string $guardName = null): array;
 
     /**
-     * @param string|null $identifier
-     * @param array<string, mixed> $payload
-      * @param string|null $clientIp
+     * Verify a WebAuthn assertion and authenticate the user.
+     *
+     * @param  string|null           $identifier
+     * @param  array<string, mixed>  $payload
+     * @param  string|null           $guardName
+     * @param  bool|null             $stateful
+     * @param  string|null           $clientIp
      * @return array<string, mixed>
      */
-     public function authenticate($identifier, array $payload, $guardName = null, $stateful = null, $clientIp = null);
+    public function authenticate(
+        ?string $identifier,
+        array $payload,
+        ?string $guardName = null,
+        ?bool $stateful = null,
+        ?string $clientIp = null,
+    ): array;
 
     /**
-     * @param Authenticatable $user
-     * @param Passkey $passkey
+     * Delete a passkey belonging to the given user.
+     *
+     * @param  Authenticatable  $user
+     * @param  Passkey          $passkey
      * @return bool
      */
-    public function deletePasskey(Authenticatable $user, Passkey $passkey);
+    public function deletePasskey(Authenticatable $user, Passkey $passkey): bool;
+
+    /**
+     * Rename a passkey belonging to the given user.
+     *
+     * @param  Authenticatable  $user
+     * @param  Passkey          $passkey
+     * @param  string           $name
+     * @return bool
+     */
+    public function renamePasskey(Authenticatable $user, Passkey $passkey, string $name): bool;
 }

@@ -7,6 +7,9 @@ namespace Hamzi\Vaultic\Events;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Dispatched when a passkey authentication attempt fails.
+ */
 class AuthenticationFailed
 {
     use Dispatchable;

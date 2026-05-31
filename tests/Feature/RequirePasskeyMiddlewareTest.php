@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Tests\Feature;
 
 use Illuminate\Support\Facades\Route;
@@ -7,7 +9,7 @@ use Hamzi\Vaultic\Tests\TestCase;
 
 class RequirePasskeyMiddlewareTest extends TestCase
 {
-    public function test_it_blocks_sensitive_routes_when_session_is_missing()
+    public function test_it_blocks_sensitive_routes_when_session_is_missing(): void
     {
         Route::middleware(['web', 'passkey.required'])->get('/_vaultic/protected', function () {
             return 'ok';
@@ -16,7 +18,7 @@ class RequirePasskeyMiddlewareTest extends TestCase
         $this->get('/_vaultic/protected')->assertStatus(403);
     }
 
-    public function test_it_allows_sensitive_routes_when_session_flag_exists()
+    public function test_it_allows_sensitive_routes_when_session_flag_exists(): void
     {
         Route::middleware(['web', 'passkey.required'])->get('/_vaultic/allowed', function () {
             return 'ok';

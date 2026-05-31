@@ -8,6 +8,9 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Hamzi\Vaultic\Models\Passkey;
 
+/**
+ * Dispatched when a user successfully authenticates with a passkey.
+ */
 class PasskeyAuthenticated
 {
     use Dispatchable;

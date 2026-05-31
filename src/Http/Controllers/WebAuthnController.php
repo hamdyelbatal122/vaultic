@@ -1,60 +1,49 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Hamzi\Vaultic\Models\Passkey;
+use Illuminate\Support\Facades\Auth;
 use Hamzi\Vaultic\Contracts\WebAuthnService;
+use Hamzi\Vaultic\Http\Requests\AuthenticateRequest;
+use Hamzi\Vaultic\Http\Requests\AuthenticationOptionsRequest;
+use Hamzi\Vaultic\Http\Requests\RegisterPasskeyRequest;
+use Hamzi\Vaultic\Http\Requests\RenamePasskeyRequest;
+use Hamzi\Vaultic\Models\Passkey;
 
+/**
+ * Handles WebAuthn registration, authentication, and passkey management.
+ */
 class WebAuthnController extends Controller
 {
-    /** @var WebAuthnService */
-    private $service;
-
-    /**
-     * @param WebAuthnService $service
-     */
-    public function __construct(WebAuthnService $service)
-    {
-        $this->service = $service;
+    public function __construct(
+        private readonly WebAuthnService $service,
+    ) {
     }
 
     /**
-     * @param Request $request
-     * @return JsonResponse
+     * Return WebAuthn registration options for the authenticated user.
      */
-    public function registrationOptions(Request $request)
+    public function registrationOptions(Request $request): JsonResponse
     {
-        list($guardName) = $this->resolveChannelContext($request);
-        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
-
-        if ($user === null) {
-            abort(401);
-        }
+        [$guardName] = $this->resolveChannelContext($request);
+        $user = $this->resolveAuthenticatedUser($request, $guardName);
 
         return response()->json($this->service->buildRegistrationOptions($user, $guardName));
     }
 
     /**
-     * @param Request $request
-     * @return JsonResponse
+     * Register a new passkey for the authenticated user.
      */
-    public function register(Request $request)
+    public function register(RegisterPasskeyRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => ['nullable', 'string', 'max:' . (int) config('vaultic.device_name_max_length', 100)],
-        ]);
-
-        list($guardName) = $this->resolveChannelContext($request);
-        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
-
-        if ($user === null) {
-            abort(401);
-        }
+        [$guardName] = $this->resolveChannelContext($request);
+        $user = $this->resolveAuthenticatedUser($request, $guardName);
 
         $result = $this->service->registerPasskey($user, $request->all(), $guardName);
 
@@ -62,44 +51,37 @@ class WebAuthnController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @return JsonResponse
+     * Return WebAuthn authentication options.
      */
-    public function authenticationOptions(Request $request)
+    public function authenticationOptions(AuthenticationOptionsRequest $request): JsonResponse
     {
-        list($guardName) = $this->resolveChannelContext($request);
-        $validated = $request->validate([
-            'identifier' => ['nullable', 'string', 'max:255'],
-            'guard' => ['nullable', 'string', 'max:50'],
-        ]);
+        [$guardName] = $this->resolveChannelContext($request);
+        $validated = $request->validated();
 
         return response()->json(
             $this->service->buildAuthenticationOptions(
                 isset($validated['identifier']) ? (string) $validated['identifier'] : null,
-                isset($validated['guard']) ? (string) $validated['guard'] : $guardName
-            )
+                isset($validated['guard']) ? (string) $validated['guard'] : $guardName,
+            ),
         );
     }
 
     /**
-     * @param Request $request
-     * @return JsonResponse
+     * Authenticate using a WebAuthn assertion.
      */
-    public function authenticate(Request $request)
+    public function authenticate(AuthenticateRequest $request): JsonResponse
     {
-        list($guardName, $stateful) = $this->resolveChannelContext($request);
-        $validated = $request->validate([
-            'identifier' => ['nullable', 'string', 'max:255'],
-            'guard' => ['nullable', 'string', 'max:50'],
-        ]);
+        [$guardName, $stateful] = $this->resolveChannelContext($request);
+        $validated = $request->validated();
 
         $resolvedGuard = isset($validated['guard']) ? (string) $validated['guard'] : $guardName;
+
         $result = $this->service->authenticate(
             isset($validated['identifier']) ? (string) $validated['identifier'] : null,
             $request->all(),
             $resolvedGuard,
             $stateful,
-            (string) $request->ip()
+            (string) $request->ip(),
         );
 
         if (isset($result['session']) && is_array($result['session'])) {
@@ -112,18 +94,12 @@ class WebAuthnController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param Passkey $passkey
-     * @return JsonResponse|RedirectResponse
+     * Delete an owned passkey.
      */
-    public function destroy(Request $request, Passkey $passkey)
+    public function destroy(Request $request, Passkey $passkey): JsonResponse|RedirectResponse
     {
-        list($guardName) = $this->resolveChannelContext($request);
-        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
-
-        if ($user === null) {
-            abort(401);
-        }
+        [$guardName] = $this->resolveChannelContext($request);
+        $user = $this->resolveAuthenticatedUser($request, $guardName);
 
         if (! $this->service->deletePasskey($user, $passkey)) {
             abort(404);
@@ -131,7 +107,7 @@ class WebAuthnController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Passkey deleted successfully.',
+                'message'       => 'Passkey deleted successfully.',
                 'credential_id' => $passkey->credential_id,
             ]);
         }
@@ -140,18 +116,61 @@ class WebAuthnController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @return array{0:string,1:bool}
+     * Rename an owned passkey.
+     */
+    public function rename(RenamePasskeyRequest $request, Passkey $passkey): JsonResponse|RedirectResponse
+    {
+        [$guardName] = $this->resolveChannelContext($request);
+        $user = $this->resolveAuthenticatedUser($request, $guardName);
+
+        if (! $this->service->renamePasskey($user, $passkey, $request->validated('name'))) {
+            abort(404);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Passkey renamed successfully.',
+                'name'    => $passkey->fresh()?->name,
+            ]);
+        }
+
+        return back()->with('vaultic.status', 'Passkey renamed successfully.');
+    }
+
+    // -------------------------------------------------------------------------
+    //  Private Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Resolve the guard name and stateful flag from the route channel context.
+     *
+     * @return array{0: string, 1: bool}
      */
     private function resolveChannelContext(Request $request): array
     {
         $routeName = $request->route() ? (string) $request->route()->getName() : '';
         $channel = str_starts_with($routeName, 'vaultic.api.') ? 'api' : 'web';
-        $channelConfig = (array) config('vaultic.routes.'.$channel, []);
+        $channelConfig = (array) config('vaultic.routes.' . $channel, []);
 
         return [
             (string) ($channelConfig['guard'] ?? config('vaultic.auth.default_guard', 'web')),
             (bool) ($channelConfig['stateful'] ?? true),
         ];
+    }
+
+    /**
+     * Resolve and return the authenticated user, or abort 401.
+     *
+     * @return \Illuminate\Contracts\Auth\Authenticatable
+     */
+    private function resolveAuthenticatedUser(Request $request, string $guardName)
+    {
+        $user = $request->user($guardName) ?: Auth::guard($guardName)->user();
+
+        if ($user === null) {
+            abort(401);
+        }
+
+        return $user;
     }
 }

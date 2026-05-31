@@ -9,9 +9,9 @@ use Illuminate\Queue\SerializesModels;
 use Hamzi\Vaultic\Models\Passkey;
 
 /**
- * Dispatched when a new passkey is successfully registered.
+ * Dispatched when a passkey is successfully renamed.
  */
-class PasskeyRegistered
+class PasskeyRenamed
 {
     use Dispatchable;
     use SerializesModels;
@@ -19,6 +19,8 @@ class PasskeyRegistered
     public function __construct(
         public readonly mixed $user,
         public readonly Passkey $passkey,
+        public readonly string $oldName,
+        public readonly string $newName,
     ) {
     }
 }

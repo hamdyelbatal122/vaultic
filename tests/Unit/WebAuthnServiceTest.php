@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Tests\Unit;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
@@ -78,7 +81,7 @@ class WebAuthnServiceTest extends TestCase
         config()->set('vaultic.authenticator_hints', ['client-device', 'hybrid']);
     }
 
-    public function test_it_authenticates_statefully_for_a_session_guard()
+    public function test_it_authenticates_statefully_for_a_session_guard(): void
     {
         $user = TestUser::query()->create([
             'email' => 'user@example.com',
@@ -94,12 +97,7 @@ class WebAuthnServiceTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
-            {
-                return [];
-            }
-        });
+        $service = $this->makeService($this->makeNullTokenIssuer());
 
         Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
             public function login($user, $remember = false)
@@ -121,7 +119,7 @@ class WebAuthnServiceTest extends TestCase
         ]);
     }
 
-    public function test_it_returns_token_payload_for_stateless_api_guard()
+    public function test_it_returns_token_payload_for_stateless_api_guard(): void
     {
         $user = TestUser::query()->create([
             'email' => 'api@example.com',
@@ -138,7 +136,7 @@ class WebAuthnServiceTest extends TestCase
         ]);
 
         $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
+            public function issueToken(Authenticatable $authenticatable, string $guardName, array $payload = []): array
             {
                 return [
                     'access_token' => 'token-123',
@@ -158,7 +156,7 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame([], $result['session']);
     }
 
-    public function test_it_builds_authentication_options_for_a_different_guard_model()
+    public function test_it_builds_authentication_options_for_a_different_guard_model(): void
     {
         $admin = AdminUser::query()->create([
             'email' => 'admin@example.com',
@@ -174,12 +172,7 @@ class WebAuthnServiceTest extends TestCase
             'sign_count' => 0,
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
-            {
-                return [];
-            }
-        });
+        $service = $this->makeService($this->makeNullTokenIssuer());
 
         $options = $service->buildAuthenticationOptions('admin@example.com', 'admin');
 
@@ -188,19 +181,14 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame('cred-admin', $options['allowCredentials'][0]['id']);
     }
 
-    public function test_it_exposes_modern_webauthn_registration_preferences()
+    public function test_it_exposes_modern_webauthn_registration_preferences(): void
     {
         $user = TestUser::query()->create([
             'email' => 'modern@example.com',
             'name' => 'Modern User',
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
-            {
-                return [];
-            }
-        });
+        $service = $this->makeService($this->makeNullTokenIssuer());
 
         $options = $service->buildRegistrationOptions($user, 'web');
 
@@ -208,7 +196,7 @@ class WebAuthnServiceTest extends TestCase
         $this->assertSame(['client-device', 'hybrid'], $options['hints']);
     }
 
-    public function test_it_authenticates_without_identifier_using_discoverable_passkey()
+    public function test_it_authenticates_without_identifier_using_discoverable_passkey(): void
     {
         $user = TestUser::query()->create([
             'email' => 'discoverable@example.com',
@@ -224,12 +212,7 @@ class WebAuthnServiceTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
-            {
-                return [];
-            }
-        });
+        $service = $this->makeService($this->makeNullTokenIssuer());
 
         Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
             public function login($user, $remember = false)
@@ -253,7 +236,7 @@ class WebAuthnServiceTest extends TestCase
         $this->assertTrue($result['body']['stateful']);
     }
 
-    public function test_it_can_skip_storing_last_used_ip_for_privacy_sensitive_setups()
+    public function test_it_can_skip_storing_last_used_ip_for_privacy_sensitive_setups(): void
     {
         config()->set('vaultic.security.store_last_used_ip', false);
 
@@ -271,12 +254,7 @@ class WebAuthnServiceTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
-            public function issueToken($authenticatable, $guardName, array $payload = [])
-            {
-                return [];
-            }
-        });
+        $service = $this->makeService($this->makeNullTokenIssuer());
 
         Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
             public function login($user, $remember = false)
@@ -295,10 +273,22 @@ class WebAuthnServiceTest extends TestCase
     }
 
     /**
-     * @param ApiTokenIssuer $tokenIssuer
-     * @return WebAuthnService
+     * Create a null-object API token issuer for tests that don't need token payloads.
      */
-    private function makeService(ApiTokenIssuer $tokenIssuer)
+    private function makeNullTokenIssuer(): ApiTokenIssuer
+    {
+        return new class implements ApiTokenIssuer {
+            public function issueToken(Authenticatable $authenticatable, string $guardName, array $payload = []): array
+            {
+                return [];
+            }
+        };
+    }
+
+    /**
+     * Build a WebAuthnService with a fake verifier and the given token issuer.
+     */
+    private function makeService(ApiTokenIssuer $tokenIssuer): WebAuthnService
     {
         $verifier = new class implements WebAuthnVerifier {
             public function verifyRegistration(array $payload, string $challenge, string $rpId): RegistrationResult
@@ -316,7 +306,7 @@ class WebAuthnServiceTest extends TestCase
             $verifier,
             new ChallengeStore(new Repository(new ArrayStore()), 'vaultic:test:', 60),
             new EloquentPasskeyRepository(),
-            $tokenIssuer
+            $tokenIssuer,
         );
     }
 }

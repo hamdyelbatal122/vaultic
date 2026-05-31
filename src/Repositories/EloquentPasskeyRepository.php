@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Repositories;
 
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -7,55 +9,47 @@ use Illuminate\Support\Collection;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Models\Passkey;
 
+/**
+ * Eloquent-backed implementation of the passkey repository contract.
+ */
 class EloquentPasskeyRepository implements PasskeyRepository
 {
     /**
-     * @param Authenticatable $authenticatable
-     * @return array<int, array<string, string>>
+     * {@inheritDoc}
      */
-    public function listCredentialDescriptorsForAuthenticatable(Authenticatable $authenticatable)
+    public function listCredentialDescriptorsForAuthenticatable(Authenticatable $authenticatable): array
     {
-        $descriptors = [];
-
-        $passkeys = Passkey::query()
+        return Passkey::query()
             ->where('authenticatable_type', get_class($authenticatable))
             ->where('authenticatable_id', (string) $authenticatable->getAuthIdentifier())
-            ->get(['credential_id']);
-
-        foreach ($passkeys as $passkey) {
-            $descriptors[] = [
+            ->pluck('credential_id')
+            ->map(fn (string $credentialId): array => [
                 'type' => 'public-key',
-                'id' => (string) $passkey->credential_id,
-            ];
-        }
-
-        return $descriptors;
+                'id'   => $credentialId,
+            ])
+            ->all();
     }
 
     /**
-     * @param string $credentialId
-     * @return Passkey|null
+     * {@inheritDoc}
      */
-    public function findByCredentialId($credentialId)
+    public function findByCredentialId(string $credentialId): ?Passkey
     {
         return Passkey::query()->where('credential_id', $credentialId)->first();
     }
 
     /**
-     * @param string $credentialId
-     * @return bool
+     * {@inheritDoc}
      */
-    public function credentialExists($credentialId)
+    public function credentialExists(string $credentialId): bool
     {
         return Passkey::query()->where('credential_id', $credentialId)->exists();
     }
 
     /**
-     * @param Authenticatable $authenticatable
-     * @param array<string, mixed> $attributes
-     * @return Passkey
+     * {@inheritDoc}
      */
-    public function createForAuthenticatable(Authenticatable $authenticatable, array $attributes)
+    public function createForAuthenticatable(Authenticatable $authenticatable, array $attributes): Passkey
     {
         $attributes['authenticatable_type'] = get_class($authenticatable);
         $attributes['authenticatable_id'] = (string) $authenticatable->getAuthIdentifier();
@@ -64,8 +58,7 @@ class EloquentPasskeyRepository implements PasskeyRepository
     }
 
     /**
-     * @param Authenticatable $authenticatable
-     * @return Collection<int, Passkey>
+     * {@inheritDoc}
      */
     public function listForAuthenticatable(Authenticatable $authenticatable): Collection
     {
@@ -78,16 +71,11 @@ class EloquentPasskeyRepository implements PasskeyRepository
     }
 
     /**
-     * @param Authenticatable $authenticatable
-     * @param Passkey $passkey
-     * @return bool
+     * {@inheritDoc}
      */
     public function deleteForAuthenticatable(Authenticatable $authenticatable, Passkey $passkey): bool
     {
-        if (
-            $passkey->authenticatable_type !== get_class($authenticatable)
-            || (string) $passkey->authenticatable_id !== (string) $authenticatable->getAuthIdentifier()
-        ) {
+        if (! $this->belongsToAuthenticatable($authenticatable, $passkey)) {
             return false;
         }
 
@@ -95,18 +83,39 @@ class EloquentPasskeyRepository implements PasskeyRepository
     }
 
     /**
-     * @param Passkey $passkey
-     * @param int $signCount
-     * @param string|null $ipAddress
-     * @return void
+     * {@inheritDoc}
      */
-    public function markAsUsed(Passkey $passkey, $signCount, $ipAddress = null)
+    public function renameForAuthenticatable(Authenticatable $authenticatable, Passkey $passkey, string $name): bool
     {
-        $passkey->sign_count = max((int) $passkey->sign_count, (int) $signCount);
+        if (! $this->belongsToAuthenticatable($authenticatable, $passkey)) {
+            return false;
+        }
+
+        $passkey->name = $name;
+        $passkey->save();
+
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function markAsUsed(Passkey $passkey, int $signCount, ?string $ipAddress = null): void
+    {
+        $passkey->sign_count = max((int) $passkey->sign_count, $signCount);
         $passkey->last_used_at = now();
         $passkey->last_used_ip = is_string($ipAddress) && filter_var(trim($ipAddress), FILTER_VALIDATE_IP)
             ? trim($ipAddress)
             : null;
         $passkey->save();
+    }
+
+    /**
+     * Check whether the passkey belongs to the given authenticatable.
+     */
+    private function belongsToAuthenticatable(Authenticatable $authenticatable, Passkey $passkey): bool
+    {
+        return $passkey->authenticatable_type === get_class($authenticatable)
+            && (string) $passkey->authenticatable_id === (string) $authenticatable->getAuthIdentifier();
     }
 }

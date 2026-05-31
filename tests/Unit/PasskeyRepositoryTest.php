@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Tests\Unit;
 
 use Illuminate\Support\Facades\Schema;
@@ -44,7 +46,7 @@ class PasskeyRepositoryTest extends TestCase
         });
     }
 
-    public function test_it_lists_passkeys_for_the_requested_authenticatable_only()
+    public function test_it_lists_passkeys_for_the_requested_authenticatable_only(): void
     {
         $user = TestUser::query()->create(['email' => 'user@example.com']);
         $admin = AdminUser::query()->create(['email' => 'admin@example.com']);
@@ -74,7 +76,7 @@ class PasskeyRepositoryTest extends TestCase
         $this->assertSame('cred-user', $passkeys->first()->credential_id);
     }
 
-    public function test_it_only_deletes_a_passkey_owned_by_the_requested_authenticatable()
+    public function test_it_only_deletes_a_passkey_owned_by_the_requested_authenticatable(): void
     {
         $user = TestUser::query()->create(['email' => 'user@example.com']);
         $admin = AdminUser::query()->create(['email' => 'admin@example.com']);
@@ -105,7 +107,7 @@ class PasskeyRepositoryTest extends TestCase
         $this->assertDatabaseHas('passkeys', ['credential_id' => 'cred-foreign']);
     }
 
-    public function test_it_tracks_last_usage_timestamp_and_ip_address()
+    public function test_it_tracks_last_usage_timestamp_and_ip_address(): void
     {
         $user = TestUser::query()->create(['email' => 'user@example.com']);
 
@@ -126,5 +128,40 @@ class PasskeyRepositoryTest extends TestCase
         $this->assertSame(3, $passkey->sign_count);
         $this->assertNotNull($passkey->last_used_at);
         $this->assertSame('2001:db8::1', $passkey->last_used_ip);
+    }
+
+    public function test_it_only_renames_a_passkey_owned_by_the_requested_authenticatable(): void
+    {
+        $user = TestUser::query()->create(['email' => 'user@example.com']);
+        $admin = AdminUser::query()->create(['email' => 'admin@example.com']);
+
+        $ownedPasskey = Passkey::query()->create([
+            'authenticatable_type' => TestUser::class,
+            'authenticatable_id' => (string) $user->getAuthIdentifier(),
+            'name' => 'Old Name',
+            'credential_id' => 'cred-owned',
+            'public_key' => 'public-key',
+            'sign_count' => 1,
+        ]);
+
+        $foreignPasskey = Passkey::query()->create([
+            'authenticatable_type' => AdminUser::class,
+            'authenticatable_id' => (string) $admin->getAuthIdentifier(),
+            'name' => 'Foreign Old Name',
+            'credential_id' => 'cred-foreign',
+            'public_key' => 'public-key',
+            'sign_count' => 1,
+        ]);
+
+        $repository = new EloquentPasskeyRepository();
+
+        $this->assertTrue($repository->renameForAuthenticatable($user, $ownedPasskey, 'New Name'));
+        $this->assertFalse($repository->renameForAuthenticatable($user, $foreignPasskey, 'New Name Attempt'));
+
+        $ownedPasskey->refresh();
+        $foreignPasskey->refresh();
+
+        $this->assertSame('New Name', $ownedPasskey->name);
+        $this->assertSame('Foreign Old Name', $foreignPasskey->name);
     }
 }

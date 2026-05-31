@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic;
 
 use Illuminate\Cache\RateLimiting\Limit;
@@ -19,11 +21,20 @@ use Hamzi\Vaultic\Services\ChallengeStore;
 use Hamzi\Vaultic\Services\NullWebAuthnVerifier;
 use Hamzi\Vaultic\Services\WebAuthnService;
 
+/**
+ * Service provider for the Vaultic WebAuthn/Passkeys package.
+ *
+ * Registers bindings, publishes assets, loads routes/views/migrations,
+ * and configures rate limiting and Blade directives.
+ */
 class VaulticServiceProvider extends ServiceProvider
 {
-    public function register()
+    /**
+     * Register package bindings.
+     */
+    public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/vaultic.php', 'vaultic');
+        $this->mergeConfigFrom(__DIR__ . '/../config/vaultic.php', 'vaultic');
 
         $this->app->singleton(ChallengeStore::class, function ($app) {
             $store = config('vaultic.cache.store');
@@ -34,7 +45,7 @@ class VaulticServiceProvider extends ServiceProvider
             return new ChallengeStore(
                 $cacheRepository,
                 (string) config('vaultic.cache.prefix', 'vaultic:challenge:'),
-                (int) config('vaultic.cache.ttl', 300)
+                (int) config('vaultic.cache.ttl', 300),
             );
         });
 
@@ -45,37 +56,97 @@ class VaulticServiceProvider extends ServiceProvider
         $this->app->bind(WebAuthnVerifier::class, NullWebAuthnVerifier::class);
     }
 
-    public function boot()
+    /**
+     * Boot package services.
+     */
+    public function boot(): void
     {
-        $this->publishes([
-            __DIR__.'/../config/vaultic.php' => config_path('vaultic.php'),
-        ], 'vaultic-config');
-
-        $this->publishes([
-            __DIR__.'/../database/migrations/' => database_path('migrations'),
-        ], 'vaultic-migrations');
-
-        $this->publishes([
-            __DIR__.'/../resources/views/' => resource_path('views/vendor/vaultic'),
-        ], 'vaultic-views');
-
-        if (! $this->app->routesAreCached()) {
-            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-        }
-
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'vaultic');
-        Blade::anonymousComponentNamespace('vaultic::components', 'vaultic');
+        $this->registerPublishing();
+        $this->registerRoutes();
+        $this->registerViews();
+        $this->registerMigrations();
+        $this->registerMiddleware();
         $this->registerBladeDirectives();
-        $this->app['router']->aliasMiddleware('passkey.required', RequirePasskey::class);
-
-        if (method_exists($this, 'loadMigrationsFrom')) {
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        }
-
         $this->registerRateLimiter();
     }
 
-    private function registerRateLimiter()
+    /**
+     * Register publishable assets.
+     */
+    private function registerPublishing(): void
+    {
+        $this->publishes([
+            __DIR__ . '/../config/vaultic.php' => config_path('vaultic.php'),
+        ], 'vaultic-config');
+
+        $this->publishes([
+            __DIR__ . '/../database/migrations/' => database_path('migrations'),
+        ], 'vaultic-migrations');
+
+        $this->publishes([
+            __DIR__ . '/../resources/views/' => resource_path('views/vendor/vaultic'),
+        ], 'vaultic-views');
+    }
+
+    /**
+     * Load package routes.
+     */
+    private function registerRoutes(): void
+    {
+        if (! $this->app->routesAreCached()) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        }
+    }
+
+    /**
+     * Load and register views and Blade component namespace.
+     */
+    private function registerViews(): void
+    {
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'vaultic');
+        Blade::anonymousComponentNamespace('vaultic::components', 'vaultic');
+    }
+
+    /**
+     * Load package migrations.
+     */
+    private function registerMigrations(): void
+    {
+        if (method_exists($this, 'loadMigrationsFrom')) {
+            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        }
+    }
+
+    /**
+     * Register the passkey-required middleware alias.
+     */
+    private function registerMiddleware(): void
+    {
+        $this->app['router']->aliasMiddleware('passkey.required', RequirePasskey::class);
+    }
+
+    /**
+     * Register Blade directives for passkey UI primitives.
+     */
+    private function registerBladeDirectives(): void
+    {
+        Blade::directive('passkeyButton', function (string $expression): string {
+            $data = $expression ?: '[]';
+
+            return "<?php echo vaultic_passkey_button({$data}); ?>";
+        });
+
+        Blade::directive('passkeyPanel', function (string $expression): string {
+            $data = $expression ?: '[]';
+
+            return "<?php echo vaultic_passkey_panel({$data}); ?>";
+        });
+    }
+
+    /**
+     * Register the named rate limiter for passkey endpoints.
+     */
+    private function registerRateLimiter(): void
     {
         $limiter = $this->app->bound('cache.rateLimiter')
             ? $this->app->make('cache.rateLimiter')
@@ -85,40 +156,24 @@ class VaulticServiceProvider extends ServiceProvider
             return;
         }
 
-        RateLimiter::for('vaultic.passkeys', function (Request $request) {
+        RateLimiter::for('vaultic.passkeys', function (Request $request): Limit {
             $attempts = (int) config('vaultic.rate_limit.attempts', 10);
             $decaySeconds = (int) config(
                 'vaultic.rate_limit.decay_seconds',
-                (int) config('vaultic.rate_limit.decay_minutes', 1) * 60
+                (int) config('vaultic.rate_limit.decay_minutes', 1) * 60,
             );
             $decayMinutes = max(1, (int) ceil($decaySeconds / 60));
+
             $rateLimitKey = hash('sha256', implode('|', array_filter([
                 (string) optional($request->route())->getName(),
                 (string) $request->ip(),
                 (string) $request->input('identifier', ''),
                 (string) $request->input('id', ''),
                 (string) $request->input('challenge_key', ''),
-            ], function ($value) {
-                return $value !== '';
-            })));
+            ], fn (string $value): bool => $value !== '')));
 
             return Limit::perMinutes($decayMinutes, $attempts)
                 ->by($rateLimitKey);
-        });
-    }
-
-    private function registerBladeDirectives(): void
-    {
-        Blade::directive('passkeyButton', function ($expression) {
-            $data = $expression ?: '[]';
-
-            return "<?php echo vaultic_passkey_button({$data}); ?>";
-        });
-
-        Blade::directive('passkeyPanel', function ($expression) {
-            $data = $expression ?: '[]';
-
-            return "<?php echo vaultic_passkey_panel({$data}); ?>";
         });
     }
 }

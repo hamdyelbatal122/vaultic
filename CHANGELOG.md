@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.2.0
+
+- Added Passkey Rename feature (new PATCH endpoint, controller action, event, and requests).
+- Enriched `HasPasskeys` trait with helper methods (`hasPasskeys()`, `passkeyCount()`, and `latestPasskey()`).
+- Extracted domain-specific custom exceptions (`ChallengeExpiredException`, `CredentialAlreadyRegisteredException`, `VerificationFailedException`, `ClonedAuthenticatorException`).
+- Form request validation classes (`RegisterPasskeyRequest`, `AuthenticationOptionsRequest`, `AuthenticateRequest`, `RenamePasskeyRequest`) instead of inline controller validation.
+- Cleaned up migrations (removed redundant migration, modernized to anonymous class with strict types).
+- Added comprehensive unit and feature tests for all new functionalities.
+- Ensured strict typing and type-safety (`declare(strict_types=1)`) across all package source and test files.
+
+## v4.1.0
+
+- Track and display last-used IP for each passkey in the management UI.
+- Fully refactored, professional UI/UX: compact Tailwind passkey button, modern management panel, clear activity visibility.
+- Configurable rate limiting, multi-guard support, and API token issuing.
+- All tests pass, code linted, and docs reviewed.
+
 ## v4.0.0
 
 - Laravel 13 support line.

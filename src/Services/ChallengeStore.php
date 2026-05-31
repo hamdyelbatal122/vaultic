@@ -1,56 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Services;
 
 use Illuminate\Contracts\Cache\Repository;
 use Carbon\Carbon;
 
+/**
+ * Manages single-use WebAuthn challenges using the cache store.
+ *
+ * Challenges are scoped (register / authenticate) and keyed by a subject
+ * identifier. Each challenge can only be consumed once via pull().
+ */
 class ChallengeStore
 {
-    /** @var Repository */
-    private $cache;
-
-    /** @var string */
-    private $prefix;
-
-    /** @var int */
-    private $ttlSeconds;
-
-    /**
-     * @param Repository $cache
-     * @param string $prefix
-     * @param int $ttlSeconds
-     */
-    public function __construct(Repository $cache, $prefix, $ttlSeconds)
-    {
-        $this->cache = $cache;
-        $this->prefix = $prefix;
-        $this->ttlSeconds = $ttlSeconds;
+    public function __construct(
+        private readonly Repository $cache,
+        private readonly string $prefix,
+        private readonly int $ttlSeconds,
+    ) {
     }
 
     /**
-     * @param string $scope
-     * @param string $subject
-     * @return string
+     * Issue a new single-use challenge.
+     *
+     * @param  string  $scope    The operation scope (e.g. 'register', 'authenticate').
+     * @param  string  $subject  The subject identifier (user ID, email, or discoverable key).
+     * @return string  The hex-encoded challenge string.
      */
-    public function issue($scope, $subject)
+    public function issue(string $scope, string $subject): string
     {
         $challenge = bin2hex(random_bytes(32));
+
         $this->cache->put(
             $this->key($scope, $subject),
             $challenge,
-            Carbon::now()->addSeconds($this->ttlSeconds)
+            Carbon::now()->addSeconds($this->ttlSeconds),
         );
 
         return $challenge;
     }
 
     /**
-     * @param string $scope
-     * @param string $subject
+     * Pull (consume) a previously issued challenge.
+     *
+     * Returns the challenge string if it exists and has not expired,
+     * then immediately deletes it from the store to enforce single-use.
+     *
+     * @param  string  $scope
+     * @param  string  $subject
      * @return string|null
      */
-    public function pull($scope, $subject)
+    public function pull(string $scope, string $subject): ?string
     {
         $key = $this->key($scope, $subject);
         $value = $this->cache->get($key);
@@ -60,12 +62,10 @@ class ChallengeStore
     }
 
     /**
-     * @param string $scope
-     * @param string $subject
-     * @return string
+     * Build the cache key for a given scope and subject.
      */
-    private function key($scope, $subject)
+    private function key(string $scope, string $subject): string
     {
-        return $this->prefix.$scope.':'.hash('sha256', $subject);
+        return $this->prefix . $scope . ':' . hash('sha256', $subject);
     }
 }

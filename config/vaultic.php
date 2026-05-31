@@ -7,7 +7,7 @@ return [
     ],
 
     'cache' => [
-        'store' => config('cache.default', 'file'),
+        'store' => env('CACHE_STORE', 'file'),
         'prefix' => 'vaultic:challenge:',
         'ttl' => 300,
         'redis_serialize' => true,

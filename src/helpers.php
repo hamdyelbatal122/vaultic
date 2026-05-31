@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Hamzi\Vaultic\Support\BladeComponentRenderer;
 use Illuminate\Support\HtmlString;
 

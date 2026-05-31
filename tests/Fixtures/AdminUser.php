@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hamzi\Vaultic\Tests\Fixtures;
 
 use Illuminate\Auth\Authenticatable;
