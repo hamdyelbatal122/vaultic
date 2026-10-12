@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Events;
 
+use Hamzi\Vaultic\Models\Passkey;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Hamzi\Vaultic\Models\Passkey;
 
 /**
  * Dispatched when a passkey is successfully renamed.
@@ -21,6 +21,5 @@ class PasskeyRenamed
         public readonly Passkey $passkey,
         public readonly string $oldName,
         public readonly string $newName,
-    ) {
-    }
+    ) {}
 }

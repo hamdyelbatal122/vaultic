@@ -9,8 +9,7 @@ readonly class AssertionResult
     public function __construct(
         private string $credentialId,
         private int $signCount,
-    ) {
-    }
+    ) {}
 
     public function getCredentialId(): string
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
@@ -14,7 +15,7 @@ class PasskeyRegister extends Component
     /** @var string */
     public $name = '';
 
-    public function render()
+    public function render(): View
     {
         return view('vaultic::components.register');
     }

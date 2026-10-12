@@ -7,7 +7,7 @@ use Illuminate\Support\HtmlString;
 
 if (! function_exists('vaultic_passkey_button')) {
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     function vaultic_passkey_button(array $data = []): HtmlString
     {
@@ -17,7 +17,7 @@ if (! function_exists('vaultic_passkey_button')) {
 
 if (! function_exists('vaultic_passkey_panel')) {
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     function vaultic_passkey_panel(array $data = []): HtmlString
     {

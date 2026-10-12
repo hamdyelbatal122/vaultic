@@ -4,28 +4,33 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic;
 
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Cache\RateLimiter as CacheRateLimiter;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\ServiceProvider;
+use Hamzi\Vaultic\Console\HealthCheckCommand;
+use Hamzi\Vaultic\Console\PruneCommand;
+use Hamzi\Vaultic\Console\StatsCommand;
 use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Contracts\WebAuthnService as WebAuthnServiceContract;
 use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
 use Hamzi\Vaultic\Http\Middleware\RequirePasskey;
 use Hamzi\Vaultic\Repositories\EloquentPasskeyRepository;
-use Hamzi\Vaultic\Services\NullApiTokenIssuer;
 use Hamzi\Vaultic\Services\ChallengeStore;
+use Hamzi\Vaultic\Services\NullApiTokenIssuer;
 use Hamzi\Vaultic\Services\NullWebAuthnVerifier;
 use Hamzi\Vaultic\Services\WebAuthnService;
+use Illuminate\Cache\RateLimiter as CacheRateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * Service provider for the Vaultic WebAuthn/Passkeys package.
  *
  * Registers bindings, publishes assets, loads routes/views/migrations,
- * and configures rate limiting and Blade directives.
+ * and configures rate limiting, console commands, and Blade directives.
  */
 class VaulticServiceProvider extends ServiceProvider
 {
@@ -34,7 +39,7 @@ class VaulticServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/vaultic.php', 'vaultic');
+        $this->mergeConfigFrom(__DIR__.'/../config/vaultic.php', 'vaultic');
 
         $this->app->singleton(ChallengeStore::class, function ($app) {
             $store = config('vaultic.cache.store');
@@ -68,6 +73,7 @@ class VaulticServiceProvider extends ServiceProvider
         $this->registerMiddleware();
         $this->registerBladeDirectives();
         $this->registerRateLimiter();
+        $this->registerCommands();
     }
 
     /**
@@ -76,15 +82,15 @@ class VaulticServiceProvider extends ServiceProvider
     private function registerPublishing(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/vaultic.php' => config_path('vaultic.php'),
+            __DIR__.'/../config/vaultic.php' => config_path('vaultic.php'),
         ], 'vaultic-config');
 
         $this->publishes([
-            __DIR__ . '/../database/migrations/' => database_path('migrations'),
+            __DIR__.'/../database/migrations/' => database_path('migrations'),
         ], 'vaultic-migrations');
 
         $this->publishes([
-            __DIR__ . '/../resources/views/' => resource_path('views/vendor/vaultic'),
+            __DIR__.'/../resources/views/' => resource_path('views/vendor/vaultic'),
         ], 'vaultic-views');
     }
 
@@ -93,8 +99,9 @@ class VaulticServiceProvider extends ServiceProvider
      */
     private function registerRoutes(): void
     {
-        if (! $this->app->routesAreCached()) {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        $app = $this->app;
+        if (! (method_exists($app, 'routesAreCached') && $app->routesAreCached())) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         }
     }
 
@@ -103,7 +110,7 @@ class VaulticServiceProvider extends ServiceProvider
      */
     private function registerViews(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'vaultic');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'vaultic');
         Blade::anonymousComponentNamespace('vaultic::components', 'vaultic');
     }
 
@@ -112,9 +119,7 @@ class VaulticServiceProvider extends ServiceProvider
      */
     private function registerMigrations(): void
     {
-        if (method_exists($this, 'loadMigrationsFrom')) {
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        }
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 
     /**
@@ -122,7 +127,8 @@ class VaulticServiceProvider extends ServiceProvider
      */
     private function registerMiddleware(): void
     {
-        $this->app['router']->aliasMiddleware('passkey.required', RequirePasskey::class);
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('passkey.required', RequirePasskey::class);
     }
 
     /**
@@ -152,7 +158,7 @@ class VaulticServiceProvider extends ServiceProvider
             ? $this->app->make('cache.rateLimiter')
             : null;
 
-        if (! $limiter instanceof CacheRateLimiter || ! method_exists($limiter, 'for')) {
+        if (! $limiter instanceof CacheRateLimiter) {
             return;
         }
 
@@ -164,8 +170,11 @@ class VaulticServiceProvider extends ServiceProvider
             );
             $decayMinutes = max(1, (int) ceil($decaySeconds / 60));
 
+            $route = $request->route();
+            $routeName = $route instanceof Route ? (string) $route->getName() : '';
+
             $rateLimitKey = hash('sha256', implode('|', array_filter([
-                (string) optional($request->route())->getName(),
+                $routeName,
                 (string) $request->ip(),
                 (string) $request->input('identifier', ''),
                 (string) $request->input('id', ''),
@@ -175,5 +184,19 @@ class VaulticServiceProvider extends ServiceProvider
             return Limit::perMinutes($decayMinutes, $attempts)
                 ->by($rateLimitKey);
         });
+    }
+
+    /**
+     * Register console commands.
+     */
+    private function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                HealthCheckCommand::class,
+                StatsCommand::class,
+                PruneCommand::class,
+            ]);
+        }
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Feature;
 
-use Illuminate\Support\Facades\Route;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Support\Facades\Route;
 
 class RequirePasskeyMiddlewareTest extends TestCase
 {

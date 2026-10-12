@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Unit;
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Repositories\EloquentPasskeyRepository;
 use Hamzi\Vaultic\Tests\Fixtures\AdminUser;
 use Hamzi\Vaultic\Tests\Fixtures\TestUser;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class PasskeyRepositoryTest extends TestCase
 {
@@ -69,7 +69,7 @@ class PasskeyRepositoryTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $repository = new EloquentPasskeyRepository();
+        $repository = new EloquentPasskeyRepository;
         $passkeys = $repository->listForAuthenticatable($user);
 
         $this->assertCount(1, $passkeys);
@@ -99,7 +99,7 @@ class PasskeyRepositoryTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $repository = new EloquentPasskeyRepository();
+        $repository = new EloquentPasskeyRepository;
 
         $this->assertTrue($repository->deleteForAuthenticatable($user, $ownedPasskey));
         $this->assertFalse($repository->deleteForAuthenticatable($user, $foreignPasskey));
@@ -120,7 +120,7 @@ class PasskeyRepositoryTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $repository = new EloquentPasskeyRepository();
+        $repository = new EloquentPasskeyRepository;
         $repository->markAsUsed($passkey, 3, '2001:db8::1');
 
         $passkey->refresh();
@@ -153,7 +153,7 @@ class PasskeyRepositoryTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $repository = new EloquentPasskeyRepository();
+        $repository = new EloquentPasskeyRepository;
 
         $this->assertTrue($repository->renameForAuthenticatable($user, $ownedPasskey, 'New Name'));
         $this->assertFalse($repository->renameForAuthenticatable($user, $foreignPasskey, 'New Name Attempt'));

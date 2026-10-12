@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 return [
     'rp' => [
         'id' => parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost',
@@ -20,7 +22,7 @@ return [
         'guards' => [
             'web' => [
                 'guard' => 'web',
-                'provider_model' => \App\Models\User::class,
+                'provider_model' => User::class,
                 'identifier_column' => 'email',
                 'stateful' => true,
                 'remember' => false,
@@ -28,7 +30,7 @@ return [
 
             'api' => [
                 'guard' => 'api',
-                'provider_model' => \App\Models\User::class,
+                'provider_model' => User::class,
                 'identifier_column' => 'email',
                 'stateful' => false,
                 'token_issuer' => null,
@@ -64,7 +66,7 @@ return [
         ],
     ],
 
-    'user_model' => \App\Models\User::class,
+    'user_model' => User::class,
     'user_identifier_column' => 'email',
     'redirect_after_login' => '/dashboard',
     'challenge_timeout_ms' => 60000,
@@ -78,8 +80,14 @@ return [
         'store_last_used_ip' => true,
     ],
 
+    'queue' => [
+        'enabled' => env('VAULTIC_QUEUE_ENABLED', false),
+        'connection' => env('VAULTIC_QUEUE_CONNECTION', null),
+        'queue' => env('VAULTIC_QUEUE_NAME', 'default'),
+    ],
+
     'fallback' => [
-        'driver' => 'password', // password|magic_link
+        'driver' => 'password',
         'password_login_route' => 'login',
         'magic_link_route_name' => 'login.magic',
         'magic_link_expire_minutes' => 10,

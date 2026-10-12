@@ -19,6 +19,5 @@ class AuthenticationFailed
         public readonly string $reason,
         public readonly ?string $credentialId = null,
         public readonly ?string $userIdentifier = null,
-    ) {
-    }
+    ) {}
 }

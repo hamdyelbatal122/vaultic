@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
 use Hamzi\Vaultic\Http\Controllers\WebAuthnController;
+use Illuminate\Support\Facades\Route;
 
 $attempts = (int) config('vaultic.rate_limit.attempts', 10);
 $decaySeconds = (int) config(

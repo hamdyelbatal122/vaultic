@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Feature;
 
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Tests\Fixtures\TestUser;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Schema;
 
 class PasskeyManagementTest extends TestCase
 {

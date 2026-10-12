@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Unit;
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Schema\Blueprint;
 use Hamzi\Vaultic\Concerns\HasPasskeys;
 use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class HasPasskeysTest extends TestCase
 {
@@ -41,7 +42,8 @@ class HasPasskeysTest extends TestCase
 
     private function getTestModel()
     {
-        return new class extends \Illuminate\Database\Eloquent\Model {
+        return new class extends Model
+        {
             use HasPasskeys;
 
             protected $table = 'users';

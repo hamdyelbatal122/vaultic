@@ -12,8 +12,7 @@ readonly class RegistrationResult
         private int $signCount,
         private string $transports = '',
         private string $aaguid = '',
-    ) {
-    }
+    ) {}
 
     public function getCredentialId(): string
     {

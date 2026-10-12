@@ -40,8 +40,8 @@ class NullWebAuthnVerifier implements WebAuthnVerifier
     {
         return new VaulticException(
             'No WebAuthn verifier configured. Bind '
-            . WebAuthnVerifier::class
-            . ' to your FIDO2 implementation in a service provider before calling Vaultic endpoints.',
+            .WebAuthnVerifier::class
+            .' to your FIDO2 implementation in a service provider before calling Vaultic endpoints.',
         );
     }
 }

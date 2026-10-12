@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Feature;
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
+use Hamzi\Vaultic\Events\PasskeyRenamed;
 use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Tests\Fixtures\AdminUser;
 use Hamzi\Vaultic\Tests\Fixtures\TestUser;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
-use Hamzi\Vaultic\Events\PasskeyRenamed;
+use Illuminate\Support\Facades\Schema;
 
 class PasskeyRenameTest extends TestCase
 {

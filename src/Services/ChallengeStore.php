@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Services;
 
-use Illuminate\Contracts\Cache\Repository;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\Repository;
 
 /**
  * Manages single-use WebAuthn challenges using the cache store.
@@ -19,15 +19,14 @@ class ChallengeStore
         private readonly Repository $cache,
         private readonly string $prefix,
         private readonly int $ttlSeconds,
-    ) {
-    }
+    ) {}
 
     /**
      * Issue a new single-use challenge.
      *
-     * @param  string  $scope    The operation scope (e.g. 'register', 'authenticate').
+     * @param  string  $scope  The operation scope (e.g. 'register', 'authenticate').
      * @param  string  $subject  The subject identifier (user ID, email, or discoverable key).
-     * @return string  The hex-encoded challenge string.
+     * @return string The hex-encoded challenge string.
      */
     public function issue(string $scope, string $subject): string
     {
@@ -47,10 +46,6 @@ class ChallengeStore
      *
      * Returns the challenge string if it exists and has not expired,
      * then immediately deletes it from the store to enforce single-use.
-     *
-     * @param  string  $scope
-     * @param  string  $subject
-     * @return string|null
      */
     public function pull(string $scope, string $subject): ?string
     {
@@ -66,6 +61,6 @@ class ChallengeStore
      */
     private function key(string $scope, string $subject): string
     {
-        return $this->prefix . $scope . ':' . hash('sha256', $subject);
+        return $this->prefix.$scope.':'.hash('sha256', $subject);
     }
 }

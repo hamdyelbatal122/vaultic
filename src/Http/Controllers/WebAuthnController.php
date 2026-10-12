@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
 use Hamzi\Vaultic\Contracts\WebAuthnService;
 use Hamzi\Vaultic\Http\Requests\AuthenticateRequest;
 use Hamzi\Vaultic\Http\Requests\AuthenticationOptionsRequest;
 use Hamzi\Vaultic\Http\Requests\RegisterPasskeyRequest;
 use Hamzi\Vaultic\Http\Requests\RenamePasskeyRequest;
 use Hamzi\Vaultic\Models\Passkey;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Handles WebAuthn registration, authentication, and passkey management.
@@ -23,8 +24,7 @@ class WebAuthnController extends Controller
 {
     public function __construct(
         private readonly WebAuthnService $service,
-    ) {
-    }
+    ) {}
 
     /**
      * Return WebAuthn registration options for the authenticated user.
@@ -107,7 +107,7 @@ class WebAuthnController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message'       => 'Passkey deleted successfully.',
+                'message' => 'Passkey deleted successfully.',
                 'credential_id' => $passkey->credential_id,
             ]);
         }
@@ -130,7 +130,7 @@ class WebAuthnController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Passkey renamed successfully.',
-                'name'    => $passkey->fresh()?->name,
+                'name' => $passkey->fresh()?->name,
             ]);
         }
 
@@ -150,7 +150,7 @@ class WebAuthnController extends Controller
     {
         $routeName = $request->route() ? (string) $request->route()->getName() : '';
         $channel = str_starts_with($routeName, 'vaultic.api.') ? 'api' : 'web';
-        $channelConfig = (array) config('vaultic.routes.' . $channel, []);
+        $channelConfig = (array) config('vaultic.routes.'.$channel, []);
 
         return [
             (string) ($channelConfig['guard'] ?? config('vaultic.auth.default_guard', 'web')),
@@ -161,7 +161,7 @@ class WebAuthnController extends Controller
     /**
      * Resolve and return the authenticated user, or abort 401.
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable
+     * @return Authenticatable
      */
     private function resolveAuthenticatedUser(Request $request, string $guardName)
     {

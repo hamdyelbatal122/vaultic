@@ -23,7 +23,7 @@ class AuthenticationOptionsRequest extends FormRequest
     {
         return [
             'identifier' => ['nullable', 'string', 'max:255'],
-            'guard'      => ['nullable', 'string', 'max:50'],
+            'guard' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

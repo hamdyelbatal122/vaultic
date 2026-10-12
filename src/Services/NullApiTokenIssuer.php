@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Services;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Null-object implementation of ApiTokenIssuer.

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Unit;
 
-use Illuminate\Cache\ArrayStore;
-use Illuminate\Cache\Repository;
 use Hamzi\Vaultic\Services\ChallengeStore;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
 
 class ChallengeStoreTest extends TestCase
 {
     public function test_it_issues_and_pulls_single_use_challenge(): void
     {
         $store = new ChallengeStore(
-            new Repository(new ArrayStore()),
+            new Repository(new ArrayStore),
             'vaultic:test:',
             60
         );

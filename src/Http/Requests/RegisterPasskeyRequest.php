@@ -24,7 +24,7 @@ class RegisterPasskeyRequest extends FormRequest
         $maxLength = (int) config('vaultic.device_name_max_length', 100);
 
         return [
-            'name' => ['nullable', 'string', 'max:' . $maxLength],
+            'name' => ['nullable', 'string', 'max:'.$maxLength],
         ];
     }
 }

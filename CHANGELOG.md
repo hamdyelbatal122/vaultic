@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.3.0
+
+### Summary
+Production readiness release introducing diagnostic and administrative Artisan commands, background queue support for usage metrics, enhanced model scopes, and strict static analysis.
+
+### Changes
+- Added `vaultic:health` diagnostic Artisan command to check relying party configuration, cache connectivity, database schema, HTTPS readiness, and authenticatable models.
+- Added `vaultic:stats` Artisan command to display passkey counts, active user metrics, and authenticator transport distributions.
+- Added `vaultic:prune` Artisan command and `PruneOrphanedPasskeysJob` to prune orphaned or inactive passkey records safely.
+- Added background queue support via `RecordPasskeyUsageJob` for offloading sign-counter and IP logging during high-throughput authentication.
+- Added query scopes (`scopeRecent`, `scopeUnused`, `scopeForAaguid`) and helper methods (`isUsed`, `daysSinceLastUse`) to the `Passkey` model.
+- Enriched `HasPasskeys` trait with `hasPasskey`, `findPasskey`, and `deletePasskey` methods.
+- Configured PHPStan Level 8 static analysis with zero errors.
+- Enforced PSR-12 and Laravel Pint code formatting.
+- Added GitHub Actions CI workflow supporting PHP 8.3, 8.4, and 8.5 across prefer-lowest and prefer-stable dependencies.
+- Expanded automated test suite to 40 tests and 136 assertions with 100% pass rate.
+
 ## v4.2.0
 
 - Added Passkey Rename feature (new PATCH endpoint, controller action, event, and requests).

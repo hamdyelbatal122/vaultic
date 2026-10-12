@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Services;
 
+use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use RuntimeException;
-use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 
 /**
  * Sanctum-compatible API token issuer.
@@ -24,8 +24,8 @@ class SanctumApiTokenIssuer implements ApiTokenIssuer
         if (! method_exists($authenticatable, 'createToken')) {
             throw new RuntimeException(
                 'The authenticatable model must expose createToken() to use '
-                . self::class
-                . '. Install Laravel Sanctum and add HasApiTokens to the model.',
+                .self::class
+                .'. Install Laravel Sanctum and add HasApiTokens to the model.',
             );
         }
 
@@ -41,9 +41,9 @@ class SanctumApiTokenIssuer implements ApiTokenIssuer
 
         return [
             'access_token' => property_exists($token, 'plainTextToken') ? $token->plainTextToken : null,
-            'token_type'   => 'Bearer',
-            'guard'        => $guardName,
-            'abilities'    => $abilities,
+            'token_type' => 'Bearer',
+            'guard' => $guardName,
+            'abilities' => $abilities,
         ];
     }
 }

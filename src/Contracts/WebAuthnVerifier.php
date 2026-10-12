@@ -18,9 +18,6 @@ interface WebAuthnVerifier
      * Verify a WebAuthn registration (attestation) payload.
      *
      * @param  array<string, mixed>  $payload
-     * @param  string                $challenge
-     * @param  string                $rpId
-     * @return RegistrationResult
      */
     public function verifyRegistration(array $payload, string $challenge, string $rpId): RegistrationResult;
 
@@ -28,9 +25,6 @@ interface WebAuthnVerifier
      * Verify a WebAuthn authentication (assertion) payload.
      *
      * @param  array<string, mixed>  $payload
-     * @param  string                $challenge
-     * @param  string                $rpId
-     * @return AssertionResult
      */
     public function verifyAssertion(array $payload, string $challenge, string $rpId): AssertionResult;
 }

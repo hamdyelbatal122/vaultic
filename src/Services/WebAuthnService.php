@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Services;
 
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Validation\ValidationException;
 use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Contracts\WebAuthnService as WebAuthnServiceContract;
@@ -19,7 +12,15 @@ use Hamzi\Vaultic\Events\AuthenticationFailed;
 use Hamzi\Vaultic\Events\PasskeyAuthenticated;
 use Hamzi\Vaultic\Events\PasskeyRegistered;
 use Hamzi\Vaultic\Events\PasskeyRenamed;
+use Hamzi\Vaultic\Jobs\RecordPasskeyUsageJob;
 use Hamzi\Vaultic\Models\Passkey;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -36,8 +37,7 @@ class WebAuthnService implements WebAuthnServiceContract
         private readonly ChallengeStore $challengeStore,
         private readonly PasskeyRepository $passkeyRepository,
         private readonly ApiTokenIssuer $apiTokenIssuer,
-    ) {
-    }
+    ) {}
 
     /**
      * {@inheritDoc}
@@ -54,18 +54,18 @@ class WebAuthnService implements WebAuthnServiceContract
             'challenge' => $challenge,
             'rp' => [
                 'name' => config('vaultic.rp.name'),
-                'id'   => config('vaultic.rp.id'),
+                'id' => config('vaultic.rp.id'),
             ],
             'user' => [
-                'id'          => $userId,
-                'name'        => $user->{$identifierColumn} ?: $userId,
+                'id' => $userId,
+                'name' => $user->{$identifierColumn} ?: $userId,
                 'displayName' => isset($user->name) ? $user->name : ($user->{$identifierColumn} ?: 'User'),
             ],
-            'timeout'     => (int) config('vaultic.challenge_timeout_ms', 60000),
+            'timeout' => (int) config('vaultic.challenge_timeout_ms', 60000),
             'attestation' => 'none',
             'authenticatorSelection' => array_filter([
-                'userVerification'        => config('vaultic.user_verification', 'preferred'),
-                'residentKey'             => config('vaultic.resident_key', 'required'),
+                'userVerification' => config('vaultic.user_verification', 'preferred'),
+                'residentKey' => config('vaultic.resident_key', 'required'),
                 'authenticatorAttachment' => config('vaultic.authenticator_attachment'),
             ], fn ($value) => $value !== null),
             'hints' => array_values(array_filter(
@@ -73,7 +73,7 @@ class WebAuthnService implements WebAuthnServiceContract
             )),
             'excludeCredentials' => $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),
             'vaultic' => [
-                'guard'    => (string) $guardConfig['guard'],
+                'guard' => (string) $guardConfig['guard'],
                 'stateful' => (bool) $guardConfig['stateful'],
             ],
         ];
@@ -90,7 +90,7 @@ class WebAuthnService implements WebAuthnServiceContract
         if ($challenge === null) {
             return [
                 'status' => 422,
-                'body'   => ['message' => 'Registration challenge expired.'],
+                'body' => ['message' => 'Registration challenge expired.'],
             ];
         }
 
@@ -105,7 +105,7 @@ class WebAuthnService implements WebAuthnServiceContract
 
             return [
                 'status' => 422,
-                'body'   => ['message' => 'Passkey registration verification failed.'],
+                'body' => ['message' => 'Passkey registration verification failed.'],
             ];
         }
 
@@ -116,14 +116,14 @@ class WebAuthnService implements WebAuthnServiceContract
         }
 
         $passkey = $this->passkeyRepository->createForAuthenticatable($user, [
-            'name'          => isset($payload['name']) && $payload['name'] !== ''
+            'name' => isset($payload['name']) && $payload['name'] !== ''
                 ? (string) $payload['name']
                 : 'Unnamed device',
             'credential_id' => $result->getCredentialId(),
-            'public_key'    => $result->getPublicKey(),
-            'sign_count'    => $result->getSignCount(),
-            'transports'    => $result->getTransports(),
-            'aaguid'        => $result->getAaguid(),
+            'public_key' => $result->getPublicKey(),
+            'sign_count' => $result->getSignCount(),
+            'transports' => $result->getTransports(),
+            'aaguid' => $result->getAaguid(),
         ]);
 
         Event::dispatch(new PasskeyRegistered($user, $passkey));
@@ -131,9 +131,9 @@ class WebAuthnService implements WebAuthnServiceContract
         return [
             'status' => 201,
             'body' => [
-                'message'       => 'Passkey registered successfully.',
+                'message' => 'Passkey registered successfully.',
                 'credential_id' => $passkey->credential_id,
-                'guard'         => (string) $this->getGuardConfig($guardName)['guard'],
+                'guard' => (string) $this->getGuardConfig($guardName)['guard'],
             ],
         ];
     }
@@ -152,14 +152,14 @@ class WebAuthnService implements WebAuthnServiceContract
 
         $challengeKey = $normalizedIdentifier !== ''
             ? $normalizedIdentifier
-            : 'discoverable:' . (string) $guardConfig['guard'] . ':' . bin2hex(random_bytes(16));
+            : 'discoverable:'.(string) $guardConfig['guard'].':'.bin2hex(random_bytes(16));
 
         $challenge = $this->challengeStore->issue('authenticate', $challengeKey);
 
         return [
-            'challenge'        => $challenge,
-            'rpId'             => config('vaultic.rp.id'),
-            'timeout'          => (int) config('vaultic.challenge_timeout_ms', 60000),
+            'challenge' => $challenge,
+            'rpId' => config('vaultic.rp.id'),
+            'timeout' => (int) config('vaultic.challenge_timeout_ms', 60000),
             'userVerification' => config('vaultic.user_verification', 'preferred'),
             'hints' => array_values(array_filter(
                 (array) config('vaultic.authenticator_hints', ['client-device', 'hybrid'])
@@ -168,8 +168,8 @@ class WebAuthnService implements WebAuthnServiceContract
                 ? []
                 : $this->passkeyRepository->listCredentialDescriptorsForAuthenticatable($user),
             'vaultic' => [
-                'guard'         => (string) $guardConfig['guard'],
-                'stateful'      => (bool) $guardConfig['stateful'],
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => (bool) $guardConfig['stateful'],
                 'challenge_key' => $challengeKey,
             ],
         ];
@@ -255,16 +255,26 @@ class WebAuthnService implements WebAuthnServiceContract
 
             return [
                 'status' => 409,
-                'body'   => ['message' => 'Potential cloned authenticator detected.'],
+                'body' => ['message' => 'Potential cloned authenticator detected.'],
             ];
         }
 
         $storeLastUsedIp = (bool) config('vaultic.security.store_last_used_ip', true);
-        $this->passkeyRepository->markAsUsed(
-            $passkey,
-            $result->getSignCount(),
-            $storeLastUsedIp ? $clientIp : null,
-        );
+        $queueEnabled = (bool) config('vaultic.queue.enabled', false);
+
+        if ($queueEnabled && $passkey !== null) {
+            RecordPasskeyUsageJob::dispatch(
+                (string) $passkey->credential_id,
+                $result->getSignCount(),
+                $storeLastUsedIp ? $clientIp : null,
+            );
+        } elseif ($passkey !== null) {
+            $this->passkeyRepository->markAsUsed(
+                $passkey,
+                $result->getSignCount(),
+                $storeLastUsedIp ? $clientIp : null,
+            );
+        }
 
         $sessionPayload = [];
         $tokenPayload = [];
@@ -283,18 +293,18 @@ class WebAuthnService implements WebAuthnServiceContract
         return [
             'status' => 200,
             'body' => [
-                'message'     => 'Authenticated with passkey.',
+                'message' => 'Authenticated with passkey.',
                 'redirect_to' => (string) config('vaultic.redirect_after_login', '/dashboard'),
-                'guard'       => (string) $guardConfig['guard'],
-                'stateful'    => $isStateful,
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => $isStateful,
                 'user' => [
-                    'id'   => (string) $authenticatable->getAuthIdentifier(),
+                    'id' => (string) $authenticatable->getAuthIdentifier(),
                     'type' => get_class($authenticatable),
                 ],
                 'tokens' => $tokenPayload,
             ],
             'session' => $sessionPayload,
-            'user'    => $authenticatable,
+            'user' => $authenticatable,
             'passkey' => $passkey,
         ];
     }
@@ -330,28 +340,27 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * Resolve a user model by identifier within the guard's configured provider.
      *
-     * @param  string                $identifier
      * @param  array<string, mixed>  $guardConfig
-     * @return Model|null
+     * @return (Authenticatable&Model)|null
      */
-    private function resolveUserByIdentifier(string $identifier, array $guardConfig): ?Model
+    private function resolveUserByIdentifier(string $identifier, array $guardConfig): (Authenticatable&Model)|null
     {
         $modelClass = (string) $guardConfig['provider_model'];
         $identifierColumn = (string) $guardConfig['identifier_column'];
 
-        if (! is_a($modelClass, Model::class, true)) {
+        if (! is_a($modelClass, Model::class, true) || ! is_a($modelClass, Authenticatable::class, true)) {
             return null;
         }
 
-        return $modelClass::query()->where($identifierColumn, $identifier)->first();
+        $user = $modelClass::query()->where($identifierColumn, $identifier)->first();
+
+        return ($user instanceof Authenticatable && $user instanceof Model) ? $user : null;
     }
 
     /**
      * Build a fallback authentication response.
      *
-     * @param  string                $identifier
      * @param  array<string, mixed>  $guardConfig
-     * @param  bool                  $stateful
      * @return array<string, mixed>
      */
     private function fallbackResponse(string $identifier, array $guardConfig, bool $stateful): array
@@ -365,10 +374,10 @@ class WebAuthnService implements WebAuthnServiceContract
         return [
             'status' => 401,
             'body' => [
-                'message'    => 'Passkey failed. Continue with password login.',
-                'fallback'   => 'password',
-                'guard'      => (string) $guardConfig['guard'],
-                'stateful'   => $stateful,
+                'message' => 'Passkey failed. Continue with password login.',
+                'fallback' => 'password',
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => $stateful,
                 'route_name' => (string) config('vaultic.fallback.password_login_route', 'login'),
             ],
         ];
@@ -377,9 +386,7 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * Build a magic-link fallback response.
      *
-     * @param  string                $identifier
      * @param  array<string, mixed>  $guardConfig
-     * @param  bool                  $stateful
      * @return array<string, mixed>
      */
     private function buildMagicLinkFallback(string $identifier, array $guardConfig, bool $stateful): array
@@ -399,10 +406,10 @@ class WebAuthnService implements WebAuthnServiceContract
         return [
             'status' => 401,
             'body' => [
-                'message'    => 'Passkey failed. Continue with magic link authentication.',
-                'fallback'   => 'magic_link',
-                'guard'      => (string) $guardConfig['guard'],
-                'stateful'   => $stateful,
+                'message' => 'Passkey failed. Continue with magic link authentication.',
+                'fallback' => 'magic_link',
+                'guard' => (string) $guardConfig['guard'],
+                'stateful' => $stateful,
                 'route_name' => $routeName,
                 'magic_link' => $magicLink,
             ],
@@ -412,28 +419,26 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * Resolve the guard configuration, merging defaults.
      *
-     * @param  string|null  $guardName
      * @return array<string, mixed>
      */
     private function getGuardConfig(?string $guardName = null): array
     {
         $resolvedGuardName = $guardName ?: (string) config('vaultic.auth.default_guard', 'web');
-        $guardConfig = (array) config('vaultic.auth.guards.' . $resolvedGuardName, []);
+        $guardConfig = (array) config('vaultic.auth.guards.'.$resolvedGuardName, []);
 
         return array_merge([
-            'guard'             => $resolvedGuardName,
-            'provider_model'    => (string) config('vaultic.user_model', \App\Models\User::class),
+            'guard' => $resolvedGuardName,
+            'provider_model' => (string) config('vaultic.user_model', 'App\\Models\\User'),
             'identifier_column' => (string) config('vaultic.user_identifier_column', 'email'),
-            'stateful'          => true,
-            'remember'          => false,
-            'token_issuer'      => null,
+            'stateful' => true,
+            'remember' => false,
+            'token_issuer' => null,
         ], $guardConfig);
     }
 
     /**
      * Log the authenticatable into the session-based guard.
      *
-     * @param  Authenticatable       $authenticatable
      * @param  array<string, mixed>  $guardConfig
      */
     private function loginAuthenticatable(Authenticatable $authenticatable, array $guardConfig): void
@@ -448,7 +453,6 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * Issue an API token via the configured or default token issuer.
      *
-     * @param  Authenticatable       $authenticatable
      * @param  array<string, mixed>  $guardConfig
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
@@ -474,17 +478,18 @@ class WebAuthnService implements WebAuthnServiceContract
      * Extract the credential ID from the assertion payload.
      *
      * @param  array<string, mixed>  $payload
-     * @return string|null
      */
     private function extractCredentialId(array $payload): ?string
     {
         if (isset($payload['rawId']) && is_string($payload['rawId'])) {
             $id = trim($payload['rawId']);
+
             return $id !== '' ? $id : null;
         }
 
         if (isset($payload['id']) && is_string($payload['id'])) {
             $id = trim($payload['id']);
+
             return $id !== '' ? $id : null;
         }
 
@@ -494,23 +499,23 @@ class WebAuthnService implements WebAuthnServiceContract
     /**
      * Validate that the resolved authenticatable matches the expected guard and user.
      *
-     * @param  mixed                 $authenticatable
-     * @param  Model|null            $user
-     * @param  string                $normalizedIdentifier
+     * @param  (Authenticatable&Model)|null  $user
      * @param  array<string, mixed>  $guardConfig
-     * @return bool
+     *
+     * @phpstan-assert-if-true Authenticatable $authenticatable
      */
     private function isValidAuthenticatable(
         mixed $authenticatable,
-        ?Model $user,
+        ?Authenticatable $user,
         string $normalizedIdentifier,
         array $guardConfig,
     ): bool {
-        if ($authenticatable === null) {
+        if (! $authenticatable instanceof Authenticatable) {
             return false;
         }
 
-        if (! is_a($authenticatable, (string) $guardConfig['provider_model'])) {
+        $providerModel = (string) $guardConfig['provider_model'];
+        if (! is_a($authenticatable, $providerModel)) {
             return false;
         }
 
@@ -528,10 +533,6 @@ class WebAuthnService implements WebAuthnServiceContract
 
     /**
      * Check whether the sign counter has regressed (possible cloned authenticator).
-     *
-     * @param  Passkey|null  $passkey
-     * @param  int           $newSignCount
-     * @return bool
      */
     private function isSignCounterRegression(?Passkey $passkey, int $newSignCount): bool
     {

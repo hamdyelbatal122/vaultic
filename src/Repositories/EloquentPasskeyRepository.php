@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Repositories;
 
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Collection;
+use Carbon\Carbon;
 use Hamzi\Vaultic\Contracts\PasskeyRepository;
 use Hamzi\Vaultic\Models\Passkey;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Collection;
 
 /**
  * Eloquent-backed implementation of the passkey repository contract.
@@ -25,7 +26,7 @@ class EloquentPasskeyRepository implements PasskeyRepository
             ->pluck('credential_id')
             ->map(fn (string $credentialId): array => [
                 'type' => 'public-key',
-                'id'   => $credentialId,
+                'id' => $credentialId,
             ])
             ->all();
     }
@@ -59,15 +60,20 @@ class EloquentPasskeyRepository implements PasskeyRepository
 
     /**
      * {@inheritDoc}
+     *
+     * @return Collection<int, Passkey>
      */
     public function listForAuthenticatable(Authenticatable $authenticatable): Collection
     {
-        return Passkey::query()
+        /** @var Collection<int, Passkey> $results */
+        $results = Passkey::query()
             ->where('authenticatable_type', get_class($authenticatable))
             ->where('authenticatable_id', (string) $authenticatable->getAuthIdentifier())
             ->orderByDesc('last_used_at')
             ->orderByDesc('created_at')
             ->get();
+
+        return $results;
     }
 
     /**
@@ -103,7 +109,7 @@ class EloquentPasskeyRepository implements PasskeyRepository
     public function markAsUsed(Passkey $passkey, int $signCount, ?string $ipAddress = null): void
     {
         $passkey->sign_count = max((int) $passkey->sign_count, $signCount);
-        $passkey->last_used_at = now();
+        $passkey->last_used_at = Carbon::now();
         $passkey->last_used_ip = is_string($ipAddress) && filter_var(trim($ipAddress), FILTER_VALIDATE_IP)
             ? trim($ipAddress)
             : null;

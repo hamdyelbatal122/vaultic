@@ -24,7 +24,7 @@ class RenamePasskeyRequest extends FormRequest
         $maxLength = (int) config('vaultic.device_name_max_length', 100);
 
         return [
-            'name' => ['required', 'string', 'min:1', 'max:' . $maxLength],
+            'name' => ['required', 'string', 'min:1', 'max:'.$maxLength],
         ];
     }
 }

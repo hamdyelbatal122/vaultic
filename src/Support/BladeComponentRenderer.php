@@ -16,9 +16,7 @@ class BladeComponentRenderer
     /**
      * Render a Blade view and return it as an HtmlString.
      *
-     * @param  string                $view
      * @param  array<string, mixed>  $data
-     * @return HtmlString
      */
     public static function render(string $view, array $data = []): HtmlString
     {

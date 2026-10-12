@@ -9,6 +9,4 @@ use RuntimeException;
 /**
  * Base exception for all Vaultic package errors.
  */
-class VaulticException extends RuntimeException
-{
-}
+class VaulticException extends RuntimeException {}

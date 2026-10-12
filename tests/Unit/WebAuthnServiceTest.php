@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace Hamzi\Vaultic\Tests\Unit;
 
-use Illuminate\Cache\ArrayStore;
-use Illuminate\Cache\Repository;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Hamzi\Vaultic\Contracts\ApiTokenIssuer;
 use Hamzi\Vaultic\Contracts\WebAuthnVerifier;
 use Hamzi\Vaultic\Data\AssertionResult;
 use Hamzi\Vaultic\Data\RegistrationResult;
+use Hamzi\Vaultic\Jobs\RecordPasskeyUsageJob;
 use Hamzi\Vaultic\Models\Passkey;
 use Hamzi\Vaultic\Repositories\EloquentPasskeyRepository;
 use Hamzi\Vaultic\Services\ChallengeStore;
@@ -21,6 +16,13 @@ use Hamzi\Vaultic\Services\WebAuthnService;
 use Hamzi\Vaultic\Tests\Fixtures\AdminUser;
 use Hamzi\Vaultic\Tests\Fixtures\TestUser;
 use Hamzi\Vaultic\Tests\TestCase;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 
 class WebAuthnServiceTest extends TestCase
 {
@@ -99,10 +101,9 @@ class WebAuthnServiceTest extends TestCase
 
         $service = $this->makeService($this->makeNullTokenIssuer());
 
-        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
-            public function login($user, $remember = false)
-            {
-            }
+        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class
+        {
+            public function login($user, $remember = false) {}
         });
 
         $service->buildAuthenticationOptions('user@example.com', 'web');
@@ -135,7 +136,8 @@ class WebAuthnServiceTest extends TestCase
             'sign_count' => 1,
         ]);
 
-        $service = $this->makeService(new class implements ApiTokenIssuer {
+        $service = $this->makeService(new class implements ApiTokenIssuer
+        {
             public function issueToken(Authenticatable $authenticatable, string $guardName, array $payload = []): array
             {
                 return [
@@ -214,10 +216,9 @@ class WebAuthnServiceTest extends TestCase
 
         $service = $this->makeService($this->makeNullTokenIssuer());
 
-        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
-            public function login($user, $remember = false)
-            {
-            }
+        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class
+        {
+            public function login($user, $remember = false) {}
         });
 
         $options = $service->buildAuthenticationOptions(null, 'web');
@@ -256,10 +257,9 @@ class WebAuthnServiceTest extends TestCase
 
         $service = $this->makeService($this->makeNullTokenIssuer());
 
-        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class {
-            public function login($user, $remember = false)
-            {
-            }
+        Auth::shouldReceive('guard')->once()->with('web')->andReturn(new class
+        {
+            public function login($user, $remember = false) {}
         });
 
         $service->buildAuthenticationOptions('privacy@example.com', 'web');
@@ -272,12 +272,43 @@ class WebAuthnServiceTest extends TestCase
         ]);
     }
 
+    public function test_it_dispatches_record_passkey_usage_job_when_queue_is_enabled(): void
+    {
+        Queue::fake();
+        config(['vaultic.queue.enabled' => true]);
+
+        $user = TestUser::query()->create([
+            'email' => 'queued@example.com',
+            'name' => 'Queued User',
+        ]);
+
+        Passkey::query()->create([
+            'authenticatable_type' => TestUser::class,
+            'authenticatable_id' => (string) $user->getAuthIdentifier(),
+            'name' => 'Laptop',
+            'credential_id' => 'cred-queue',
+            'public_key' => 'public-key',
+            'sign_count' => 1,
+        ]);
+
+        $service = $this->makeService($this->makeNullTokenIssuer());
+        $service->buildAuthenticationOptions('queued@example.com', 'web');
+
+        $result = $service->authenticate('queued@example.com', ['id' => 'cred-queue'], 'web', true, '198.51.100.99');
+
+        $this->assertSame(200, $result['status']);
+        Queue::assertPushed(RecordPasskeyUsageJob::class, function ($job): bool {
+            return $job->credentialId === 'cred-queue' && $job->signCount === 2 && $job->clientIp === '198.51.100.99';
+        });
+    }
+
     /**
      * Create a null-object API token issuer for tests that don't need token payloads.
      */
     private function makeNullTokenIssuer(): ApiTokenIssuer
     {
-        return new class implements ApiTokenIssuer {
+        return new class implements ApiTokenIssuer
+        {
             public function issueToken(Authenticatable $authenticatable, string $guardName, array $payload = []): array
             {
                 return [];
@@ -290,7 +321,8 @@ class WebAuthnServiceTest extends TestCase
      */
     private function makeService(ApiTokenIssuer $tokenIssuer): WebAuthnService
     {
-        $verifier = new class implements WebAuthnVerifier {
+        $verifier = new class implements WebAuthnVerifier
+        {
             public function verifyRegistration(array $payload, string $challenge, string $rpId): RegistrationResult
             {
                 return new RegistrationResult('cred-register', 'public-key', 0);
@@ -304,8 +336,8 @@ class WebAuthnServiceTest extends TestCase
 
         return new WebAuthnService(
             $verifier,
-            new ChallengeStore(new Repository(new ArrayStore()), 'vaultic:test:', 60),
-            new EloquentPasskeyRepository(),
+            new ChallengeStore(new Repository(new ArrayStore), 'vaultic:test:', 60),
+            new EloquentPasskeyRepository,
             $tokenIssuer,
         );
     }

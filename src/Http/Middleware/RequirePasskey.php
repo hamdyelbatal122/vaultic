@@ -16,11 +16,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class RequirePasskey
 {
-    /**
-     * @param  Request  $request
-     * @param  Closure  $next
-     * @return Response
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $sessionKey = (string) config('vaultic.auth.session_key', 'vaultic.passkeys.authenticated');
